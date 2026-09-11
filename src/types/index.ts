@@ -59,6 +59,12 @@ export interface OverflowInfo<T = any> {
 export interface UseTagOverflowOptions<T = any> extends TagLayoutMetricsProps {
   /** Array of tags or items to display */
   items: readonly T[];
+  /**
+   * Optional manual container width in pixels.
+   * If specified, overrides auto-detected ResizeObserver measurement.
+   * Useful for SSR pre-rendering, fixed-width containers, or testing.
+   */
+  containerWidth?: number;
   /** Maximum number of lines to display. If <= 0, displays all lines. Default: 1 */
   maxLines?: number;
   /** Horizontal gap between tags in pixels. Default: gap ?? 4 */

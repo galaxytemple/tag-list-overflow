@@ -1,12 +1,19 @@
 import { useState } from "react";
 import { TagListOverflow } from "tag-list-overflow";
+import { ShadcnBadge } from "./components/ShadcnBadge";
+import { HeroUIChip } from "./components/HeroUIChip";
+import { TailwindBadge } from "./components/TailwindBadge";
+
+type DesignSystem = "default" | "tailwind" | "shadcn" | "heroui";
 
 const INITIAL_TAGS = [
-  "React",
+  "React 19",
   "TypeScript",
-  "Next.js",
-  "Tailwind CSS",
-  "Vite",
+  "Next.js App Router",
+  "Tailwind CSS v4",
+  "Shadcn UI",
+  "HeroUI",
+  "Vite 6",
   "GraphQL",
   "Node.js",
   "Zustand",
@@ -18,32 +25,40 @@ const INITIAL_TAGS = [
   "Redis",
   "Prisma",
   "TanStack Query",
-  "ESLint",
-  "Prettier",
   "Framer Motion",
   "WebAssembly",
 ];
 
-const PASTEL_COLORS = [
-  { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" }, // blue
-  { bg: "#f0fdf4", text: "#15803d", border: "#bbf7d0" }, // green
-  { bg: "#faf5ff", text: "#7e22ce", border: "#e9d5ff" }, // purple
-  { bg: "#fff7ed", text: "#c2410c", border: "#fed7aa" }, // orange
-  { bg: "#fdf2f8", text: "#be185d", border: "#fbcfe8" }, // pink
-  { bg: "#f0fdfa", text: "#0f766e", border: "#99f6e4" }, // teal
-];
+const TAILWIND_COLORS = [
+  "indigo",
+  "sky",
+  "violet",
+  "emerald",
+  "amber",
+  "rose",
+] as const;
+
+const HEROUI_COLORS = [
+  "primary",
+  "secondary",
+  "success",
+  "warning",
+  "danger",
+] as const;
 
 export default function App() {
+  const [designSystem, setDesignSystem] = useState<DesignSystem>("shadcn");
   const [tags, setTags] = useState(INITIAL_TAGS);
-  const [containerWidth, setContainerWidth] = useState(550);
+  const [containerWidth, setContainerWidth] = useState(580);
   const [isFullWidth, setIsFullWidth] = useState(false);
   const [maxLines, setMaxLines] = useState(1);
   const [gapX, setGapX] = useState(6);
   const [gapY, setGapY] = useState(6);
-  const [paddingX, setPaddingX] = useState(10);
-  const [extraWidth, setExtraWidth] = useState(12);
   const [expandable, setExpandable] = useState(true);
-  const [useCustomTags, setUseCustomTags] = useState(true);
+
+  // Design system specific sub-options
+  const [shadcnVariant, setShadcnVariant] = useState<"default" | "secondary" | "outline" | "destructive">("secondary");
+  const [herouiVariant, setHerouiVariant] = useState<"flat" | "solid" | "bordered" | "dot">("flat");
 
   const addTag = () => {
     const newTag = `Tag #${tags.length + 1}`;
@@ -58,444 +73,476 @@ export default function App() {
     setTags(INITIAL_TAGS);
   };
 
+  // Compute metrics based on active design system
+  const metrics = (() => {
+    switch (designSystem) {
+      case "shadcn":
+        return {
+          paddingX: 10,
+          fontSize: 12,
+          fontWeight: 600,
+          extraWidth: 0,
+          fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+        };
+      case "heroui":
+        return {
+          paddingX: 10,
+          fontSize: 12,
+          fontWeight: 500,
+          extraWidth: herouiVariant === "dot" ? 14 : 0,
+          fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+        };
+      case "tailwind":
+        return {
+          paddingX: 10,
+          fontSize: 12,
+          fontWeight: 500,
+          extraWidth: 12, // 6px SVG circle + 6px gap
+          fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+        };
+      case "default":
+      default:
+        return {
+          paddingX: 8,
+          fontSize: 14,
+          fontWeight: 400,
+          extraWidth: 0,
+          fontFamily: 'inherit',
+        };
+    }
+  })();
+
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 20px" }}>
-      {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: 36 }}>
-        <div
-          style={{
-            display: "inline-block",
-            padding: "4px 12px",
-            backgroundColor: "#e0e7ff",
-            color: "#4338ca",
-            borderRadius: 9999,
-            fontSize: 13,
-            fontWeight: 600,
-            marginBottom: 12,
-          }}
-        >
-          Zero-Reflow React Component
-        </div>
-        <h1 style={{ fontSize: 36, fontWeight: 700, margin: "0 0 12px 0", color: "#0f172a" }}>
-          Tag List Overflow
-        </h1>
-        <p style={{ fontSize: 16, color: "#64748b", margin: 0, maxWidth: 650, marginInline: "auto" }}>
-          Pure mathematical off-DOM layout prediction via Canvas 2D. Dynamically displays tags across 1 to N lines
-          with a customizable <code>+N more</code> badge, without causing layout shifts or DOM reflows.
-        </p>
-      </div>
+    <div className="min-h-screen bg-slate-950 text-slate-100 py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <header className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/80 border border-blue-800/60 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-4 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+            Zero-Reflow React Component
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white mb-3">
+            Tag List Overflow
+          </h1>
+          <p className="text-base sm:text-lg text-slate-400 max-w-2xl mx-auto">
+            Dynamic line-clamp (<code className="text-blue-300">maxLines</code>) with off-DOM Canvas 2D layout prediction.
+            Compatible with <strong className="text-white">Tailwind CSS</strong>, <strong className="text-white">Shadcn UI</strong>, and <strong className="text-white">HeroUI</strong> with zero layout shifts.
+          </p>
+        </header>
 
-      {/* Main Interactive Demo Card */}
-      <div
-        style={{
-          backgroundColor: "#ffffff",
-          borderRadius: 16,
-          boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)",
-          border: "1px solid #e2e8f0",
-          padding: 28,
-          marginBottom: 32,
-        }}
-      >
-        {/* Width Slider Control */}
-        <div style={{ marginBottom: 24 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 10,
-            }}
-          >
-            <label style={{ fontSize: 14, fontWeight: 600, color: "#334155" }}>
-              Container Width:{" "}
-              <span style={{ color: "#2563eb", fontFamily: "monospace", fontSize: 16 }}>
-                {isFullWidth ? "100% (Responsive)" : `${containerWidth}px`}
+        {/* Design System Switcher Tabs */}
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-2 mb-6 shadow-xl backdrop-blur-md">
+          <div className="flex flex-wrap items-center justify-between gap-4 p-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 mr-1">
+                Design System:
               </span>
-            </label>
-            <div style={{ display: "flex", gap: 8 }}>
-              {[
-                { label: "Mobile (360px)", w: 360 },
-                { label: "Tablet (550px)", w: 550 },
-                { label: "Desktop (800px)", w: 800 },
-              ].map(({ label, w }) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => {
-                    setIsFullWidth(false);
-                    setContainerWidth(w);
-                  }}
-                  style={{
-                    padding: "4px 10px",
-                    fontSize: 12,
-                    borderRadius: 6,
-                    border: "1px solid #cbd5e1",
-                    backgroundColor: !isFullWidth && containerWidth === w ? "#2563eb" : "#f1f5f9",
-                    color: !isFullWidth && containerWidth === w ? "#ffffff" : "#475569",
-                    cursor: "pointer",
-                    fontWeight: 500,
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setIsFullWidth((prev) => !prev)}
-                style={{
-                  padding: "4px 10px",
-                  fontSize: 12,
-                  borderRadius: 6,
-                  border: "1px solid #cbd5e1",
-                  backgroundColor: isFullWidth ? "#2563eb" : "#f1f5f9",
-                  color: isFullWidth ? "#ffffff" : "#475569",
-                  cursor: "pointer",
-                  fontWeight: 500,
-                }}
-              >
-                100% Full
-              </button>
+              <div className="flex p-1 bg-slate-950/80 rounded-xl border border-slate-800/80">
+                {(
+                  [
+                    { id: "shadcn", label: "🖤 Shadcn UI", desc: "cva Badge" },
+                    { id: "heroui", label: "🚀 HeroUI", desc: "NextUI Chip" },
+                    { id: "tailwind", label: "🎨 Tailwind CSS", desc: "Pills & Dots" },
+                    { id: "default", label: "🏷️ Default", desc: "Unstyled" },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setDesignSystem(tab.id)}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      designSystem === tab.id
+                        ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* Design System Sub-Variants */}
+            {designSystem === "shadcn" && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-400">Variant:</span>
+                {(["secondary", "default", "outline", "destructive"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setShadcnVariant(v)}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium border cursor-pointer capitalize transition-all ${
+                      shadcnVariant === v
+                        ? "bg-slate-100 text-slate-900 border-white"
+                        : "bg-slate-800/60 text-slate-400 border-slate-700 hover:bg-slate-800"
+                    }`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {designSystem === "heroui" && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-400">Chip Style:</span>
+                {(["flat", "solid", "bordered", "dot"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setHerouiVariant(v)}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium border cursor-pointer capitalize transition-all ${
+                      herouiVariant === v
+                        ? "bg-blue-600 text-white border-blue-400"
+                        : "bg-slate-800/60 text-slate-400 border-slate-700 hover:bg-slate-800"
+                    }`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <input
-            type="range"
-            min={260}
-            max={950}
-            value={containerWidth}
-            disabled={isFullWidth}
-            onChange={(e) => setContainerWidth(Number(e.target.value))}
-            style={{ width: "100%", cursor: isFullWidth ? "not-allowed" : "pointer" }}
-          />
         </div>
 
-        {/* Resizable Preview Stage */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 8 }}>
-            LIVE PREVIEW (Drag slider above or resize window to test responsiveness):
-          </div>
-          <div
-            style={{
-              padding: 20,
-              backgroundColor: "#f8fafc",
-              borderRadius: 12,
-              border: "2px dashed #cbd5e1",
-              overflow: "hidden",
-              width: isFullWidth ? "100%" : `${containerWidth}px`,
-              maxWidth: "100%",
-            }}
-          >
-            <TagListOverflow
-              items={tags}
-              maxLines={maxLines}
-              gapX={gapX}
-              gapY={gapY}
-              paddingX={useCustomTags ? paddingX : 8}
-              extraWidth={useCustomTags ? extraWidth : 0}
-              fontSize={useCustomTags ? 13 : 14}
-              overflowPaddingX={useCustomTags ? 12 : 8}
-              overflowExtraWidth={useCustomTags ? 10 : 0}
-              expandable={expandable}
-              overflowLabel={(count) => `+${count} more ↓`}
-              collapseLabel="Show less ↑"
-              renderTag={
-                useCustomTags
-                  ? (tag, index) => {
-                      const color = PASTEL_COLORS[index % PASTEL_COLORS.length];
-                      return (
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            fontSize: 13,
-                            fontWeight: 500,
-                            padding: `4px ${paddingX}px`,
-                            borderRadius: 9999,
-                            backgroundColor: color.bg,
-                            color: color.text,
-                            border: `1px solid ${color.border}`,
-                            whiteSpace: "nowrap",
-                            boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-                          }}
-                        >
-                          <span
-                            style={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: "50%",
-                              backgroundColor: color.text,
-                              marginRight: 6,
-                            }}
-                          />
-                          {tag}
-                        </span>
-                      );
-                    }
-                  : undefined
-              }
-              renderOverflow={
-                useCustomTags
-                  ? ({ count, toggle, isExpanded }) => (
-                      <button
-                        type="button"
-                        onClick={toggle}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          fontSize: 13,
-                          fontWeight: 600,
-                          padding: "4px 12px",
-                          borderRadius: 9999,
-                          backgroundColor: isExpanded ? "#fee2e2" : "#e0e7ff",
-                          color: isExpanded ? "#b91c1c" : "#4338ca",
-                          border: `1px solid ${isExpanded ? "#fca5a5" : "#c7d2fe"}`,
-                          cursor: "pointer",
-                          transition: "all 0.15s ease",
-                        }}
-                      >
-                        {isExpanded ? "Collapse ↑" : `+${count} more ↓`}
-                      </button>
-                    )
-                  : undefined
-              }
+        {/* Main Interactive Stage */}
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl mb-8">
+          {/* Container Width Slider */}
+          <div className="mb-6">
+            <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
+              <label className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                <span>Container Width:</span>
+                <span className="text-blue-400 font-mono text-base font-bold bg-blue-950/60 px-2 py-0.5 rounded border border-blue-800/50">
+                  {isFullWidth ? "100% (Responsive)" : `${containerWidth}px`}
+                </span>
+              </label>
+              <div className="flex gap-2">
+                {[
+                  { label: "Mobile (360px)", w: 360 },
+                  { label: "Tablet (560px)", w: 560 },
+                  { label: "Desktop (820px)", w: 820 },
+                ].map(({ label, w }) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => {
+                      setIsFullWidth(false);
+                      setContainerWidth(w);
+                    }}
+                    className={`px-2.5 py-1 text-xs rounded-lg border font-medium cursor-pointer transition-all ${
+                      !isFullWidth && containerWidth === w
+                        ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+                        : "bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setIsFullWidth((prev) => !prev)}
+                  className={`px-2.5 py-1 text-xs rounded-lg border font-medium cursor-pointer transition-all ${
+                    isFullWidth
+                      ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+                      : "bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700"
+                  }`}
+                >
+                  100% Full
+                </button>
+              </div>
+            </div>
+            <input
+              type="range"
+              min={280}
+              max={940}
+              value={containerWidth}
+              disabled={isFullWidth}
+              onChange={(e) => setContainerWidth(Number(e.target.value))}
+              className="w-full accent-blue-500 h-2 bg-slate-800 rounded-lg cursor-pointer"
             />
           </div>
-        </div>
 
-        {/* Configuration Controls */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: 16,
-            paddingTop: 16,
-            borderTop: "1px solid #e2e8f0",
-          }}
-        >
-          <div>
-            <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>
-              Max Lines: <span style={{ color: "#2563eb" }}>{maxLines}</span>
-            </label>
-            <div style={{ display: "flex", gap: 6 }}>
-              {[1, 2, 3, 0].map((lines) => (
-                <button
-                  key={lines}
-                  type="button"
-                  onClick={() => setMaxLines(lines)}
-                  style={{
-                    flex: 1,
-                    padding: "6px 0",
-                    fontSize: 13,
-                    borderRadius: 6,
-                    border: "1px solid #cbd5e1",
-                    backgroundColor: maxLines === lines ? "#2563eb" : "#f8fafc",
-                    color: maxLines === lines ? "#ffffff" : "#334155",
-                    cursor: "pointer",
-                    fontWeight: 500,
-                  }}
-                >
-                  {lines === 0 ? "All" : `${lines} line${lines > 1 ? "s" : ""}`}
-                </button>
-              ))}
+          {/* Interactive Preview Container */}
+          <div className="mb-6">
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex justify-between items-center">
+              <span>Live Render Area (Zero Reflow):</span>
+              <span className="text-slate-400 font-mono">
+                maxLines: {maxLines === 0 ? "Unlimited" : maxLines} | paddingX: {metrics.paddingX}px | extraWidth: +{metrics.extraWidth}px
+              </span>
+            </div>
+            <div
+              style={{
+                width: isFullWidth ? "100%" : `${containerWidth}px`,
+                maxWidth: "100%",
+              }}
+              className="p-5 bg-slate-950/70 rounded-xl border-2 border-dashed border-slate-700/80 overflow-hidden shadow-inner"
+            >
+              <TagListOverflow
+                items={tags}
+                maxLines={maxLines}
+                gapX={gapX}
+                gapY={gapY}
+                paddingX={metrics.paddingX}
+                fontSize={metrics.fontSize}
+                fontWeight={metrics.fontWeight}
+                extraWidth={metrics.extraWidth}
+                fontFamily={metrics.fontFamily}
+                expandable={expandable}
+                overflowLabel={(count) => `+${count} more`}
+                collapseLabel="Show less ↑"
+                renderTag={
+                  designSystem === "shadcn"
+                    ? (tag) => (
+                        <ShadcnBadge variant={shadcnVariant}>
+                          {tag}
+                        </ShadcnBadge>
+                      )
+                    : designSystem === "heroui"
+                    ? (tag, index) => (
+                        <HeroUIChip
+                          variant={herouiVariant}
+                          color={HEROUI_COLORS[index % HEROUI_COLORS.length]}
+                        >
+                          {tag}
+                        </HeroUIChip>
+                      )
+                    : designSystem === "tailwind"
+                    ? (tag, index) => (
+                        <TailwindBadge
+                          color={TAILWIND_COLORS[index % TAILWIND_COLORS.length]}
+                        >
+                          {tag}
+                        </TailwindBadge>
+                      )
+                    : undefined
+                }
+                renderOverflow={
+                  designSystem === "shadcn"
+                    ? ({ count, toggle, isExpanded }) => (
+                        <button
+                          type="button"
+                          onClick={toggle}
+                          className="inline-flex items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 px-2.5 py-0.5 text-xs font-semibold transition-colors cursor-pointer select-none"
+                        >
+                          {isExpanded ? "Collapse ↑" : `+${count} more`}
+                        </button>
+                      )
+                    : designSystem === "heroui"
+                    ? ({ count, toggle, isExpanded }) => (
+                        <button
+                          type="button"
+                          onClick={toggle}
+                          className="inline-flex items-center justify-center rounded-full text-xs font-medium px-2.5 py-1 bg-slate-800 border border-slate-700 text-blue-400 hover:bg-slate-700 transition-all cursor-pointer select-none"
+                        >
+                          {isExpanded ? "Show less ↑" : `+${count} more`}
+                        </button>
+                      )
+                    : designSystem === "tailwind"
+                    ? ({ count, toggle, isExpanded }) => (
+                        <button
+                          type="button"
+                          onClick={toggle}
+                          className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 cursor-pointer select-none"
+                        >
+                          {isExpanded ? "Collapse" : `+${count} more`}
+                        </button>
+                      )
+                    : undefined
+                }
+              />
             </div>
           </div>
 
-          <div>
-            <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>
-              gapX: <span style={{ color: "#2563eb" }}>{gapX}px</span> / gapY:{" "}
-              <span style={{ color: "#2563eb" }}>{gapY}px</span>
-            </label>
-            <div style={{ display: "flex", gap: 6 }}>
-              {[4, 6, 8, 12].map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => {
-                    setGapX(g);
-                    setGapY(g);
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "6px 0",
-                    fontSize: 13,
-                    borderRadius: 6,
-                    border: "1px solid #cbd5e1",
-                    backgroundColor: gapX === g ? "#2563eb" : "#f8fafc",
-                    color: gapX === g ? "#ffffff" : "#334155",
-                    cursor: "pointer",
-                    fontWeight: 500,
-                  }}
-                >
-                  {g}px
-                </button>
-              ))}
+          {/* Controls Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 pt-5 border-t border-slate-800">
+            {/* Max Lines */}
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-2">
+                Max Lines: <span className="text-blue-400 font-mono">{maxLines === 0 ? "All" : maxLines}</span>
+              </label>
+              <div className="flex gap-1.5">
+                {[1, 2, 3, 0].map((lines) => (
+                  <button
+                    key={lines}
+                    type="button"
+                    onClick={() => setMaxLines(lines)}
+                    className={`flex-1 py-1.5 text-xs rounded-lg border font-medium cursor-pointer transition-all ${
+                      maxLines === lines
+                        ? "bg-blue-600 text-white border-blue-500"
+                        : "bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700"
+                    }`}
+                  >
+                    {lines === 0 ? "All" : `${lines}L`}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>
-              paddingX: <span style={{ color: "#2563eb" }}>{paddingX}px</span> / extraWidth:{" "}
-              <span style={{ color: "#2563eb" }}>{extraWidth}px</span>
-            </label>
-            <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-              {[6, 8, 10, 12].map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPaddingX(p)}
-                  style={{
-                    flex: 1,
-                    padding: "4px 0",
-                    fontSize: 12,
-                    borderRadius: 6,
-                    border: "1px solid #cbd5e1",
-                    backgroundColor: paddingX === p ? "#2563eb" : "#f8fafc",
-                    color: paddingX === p ? "#ffffff" : "#334155",
-                    cursor: "pointer",
-                    fontWeight: 500,
-                  }}
-                >
-                  {p}px
-                </button>
-              ))}
+            {/* Gap */}
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-2">
+                Gap: <span className="text-blue-400 font-mono">{gapX}px</span>
+              </label>
+              <div className="flex gap-1.5">
+                {[4, 6, 8, 12].map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => {
+                      setGapX(g);
+                      setGapY(g);
+                    }}
+                    className={`flex-1 py-1.5 text-xs rounded-lg border font-medium cursor-pointer transition-all ${
+                      gapX === g
+                        ? "bg-blue-600 text-white border-blue-500"
+                        : "bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700"
+                    }`}
+                  >
+                    {g}px
+                  </button>
+                ))}
+              </div>
             </div>
-            <div style={{ display: "flex", gap: 6 }}>
-              {[0, 6, 12, 16].map((ew) => (
-                <button
-                  key={ew}
-                  type="button"
-                  onClick={() => setExtraWidth(ew)}
-                  style={{
-                    flex: 1,
-                    padding: "4px 0",
-                    fontSize: 12,
-                    borderRadius: 6,
-                    border: "1px solid #cbd5e1",
-                    backgroundColor: extraWidth === ew ? "#2563eb" : "#f8fafc",
-                    color: extraWidth === ew ? "#ffffff" : "#334155",
-                    cursor: "pointer",
-                    fontWeight: 500,
-                  }}
-                >
-                  +{ew}w
-                </button>
-              ))}
-            </div>
-          </div>
 
-          <div>
-            <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>
-              Options & Tags ({tags.length})
-            </label>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-              <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+            {/* Expandable Toggle */}
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-2">
+                Interaction
+              </label>
+              <label className="flex items-center gap-2 p-1.5 bg-slate-800/60 rounded-lg border border-slate-700/80 cursor-pointer hover:bg-slate-800 transition-colors">
                 <input
                   type="checkbox"
                   checked={expandable}
                   onChange={(e) => setExpandable(e.target.checked)}
+                  className="accent-blue-500 rounded"
                 />
-                Expandable
-              </label>
-              <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={useCustomTags}
-                  onChange={(e) => setUseCustomTags(e.target.checked)}
-                />
-                Custom Tags
+                <span className="text-xs font-medium text-slate-300">Expandable Badge</span>
               </label>
             </div>
-            <div style={{ display: "flex", gap: 6 }}>
-              <button
-                type="button"
-                onClick={addTag}
-                style={{
-                  flex: 1,
-                  padding: "4px 0",
-                  fontSize: 12,
-                  borderRadius: 6,
-                  border: "1px solid #cbd5e1",
-                  backgroundColor: "#f8fafc",
-                  cursor: "pointer",
-                  fontWeight: 500,
-                }}
-              >
-                + Add
-              </button>
-              <button
-                type="button"
-                onClick={removeTag}
-                style={{
-                  flex: 1,
-                  padding: "4px 0",
-                  fontSize: 12,
-                  borderRadius: 6,
-                  border: "1px solid #cbd5e1",
-                  backgroundColor: "#f8fafc",
-                  cursor: "pointer",
-                  fontWeight: 500,
-                }}
-              >
-                - Remove
-              </button>
-              <button
-                type="button"
-                onClick={resetTags}
-                style={{
-                  flex: 1,
-                  padding: "4px 0",
-                  fontSize: 12,
-                  borderRadius: 6,
-                  border: "1px solid #cbd5e1",
-                  backgroundColor: "#f8fafc",
-                  cursor: "pointer",
-                  fontWeight: 500,
-                }}
-              >
-                Reset
-              </button>
+
+            {/* Tag Count Actions */}
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-2">
+                Tags Count: <span className="text-blue-400 font-mono">{tags.length}</span>
+              </label>
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={addTag}
+                  className="flex-1 py-1 text-xs rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 cursor-pointer font-medium"
+                >
+                  + Add
+                </button>
+                <button
+                  type="button"
+                  onClick={removeTag}
+                  className="flex-1 py-1 text-xs rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 cursor-pointer font-medium"
+                >
+                  - Remove
+                </button>
+                <button
+                  type="button"
+                  onClick={resetTags}
+                  className="flex-1 py-1 text-xs rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 cursor-pointer font-medium"
+                >
+                  Reset
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Code Snippet */}
-      <div
-        style={{
-          backgroundColor: "#0f172a",
-          color: "#f8fafc",
-          borderRadius: 12,
-          padding: 24,
-          overflowX: "auto",
-        }}
-      >
-        <div style={{ color: "#94a3b8", marginBottom: 12, fontSize: 13, fontWeight: 600 }}>
-          // Dynamic Usage Snippet (reflects controls above)
+        {/* Dynamic Usage Code Block */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Copy & Paste Usage ({designSystem.toUpperCase()} Integration)
+            </span>
+            <span className="text-xs text-blue-400 font-mono">TypeScript / React</span>
+          </div>
+          <pre className="p-4 bg-slate-950 rounded-xl border border-slate-850 font-mono text-xs sm:text-sm text-slate-300 leading-relaxed overflow-x-auto">
+{designSystem === "shadcn"
+  ? `import { TagListOverflow } from "tag-list-overflow";
+import { Badge } from "@/components/ui/badge";
+
+export function ShadcnTagList({ tags }: { tags: string[] }) {
+  return (
+    <TagListOverflow
+      items={tags}
+      maxLines={${maxLines}}
+      gapX={${gapX}}
+      gapY={${gapY}}
+      paddingX={10}    // matches Shadcn's px-2.5 (10px)
+      fontSize={12}    // matches text-xs
+      fontWeight={600} // matches font-semibold
+      ${expandable ? "expandable\n      " : ""}overflowLabel={(count) => \`+\${count} more\`}
+      renderTag={(tag) => (
+        <Badge variant="${shadcnVariant}">{tag}</Badge>
+      )}
+    />
+  );
+}`
+  : designSystem === "heroui"
+  ? `import { TagListOverflow } from "tag-list-overflow";
+import { Chip } from "@heroui/react";
+
+export function HeroUITagList({ tags }: { tags: string[] }) {
+  return (
+    <TagListOverflow
+      items={tags}
+      maxLines={${maxLines}}
+      gapX={${gapX}}
+      gapY={${gapY}}
+      paddingX={10}   // matches px-2.5
+      fontSize={12}   // matches text-xs
+      fontWeight={500}
+      extraWidth={${herouiVariant === "dot" ? 14 : 0}}  // accounts for dot indicator
+      ${expandable ? "expandable\n      " : ""}overflowLabel={(count) => \`+\${count} more\`}
+      renderTag={(tag) => (
+        <Chip variant="${herouiVariant}" color="primary">{tag}</Chip>
+      )}
+    />
+  );
+}`
+  : designSystem === "tailwind"
+  ? `import { TagListOverflow } from "tag-list-overflow";
+
+export function TailwindTagList({ tags }: { tags: string[] }) {
+  return (
+    <TagListOverflow
+      items={tags}
+      maxLines={${maxLines}}
+      gapX={${gapX}}
+      gapY={${gapY}}
+      paddingX={10}   // matches px-2.5
+      fontSize={12}   // matches text-xs
+      fontWeight={500}
+      extraWidth={12} // accounts for dot SVG circle
+      ${expandable ? "expandable\n      " : ""}overflowLabel={(count) => \`+\${count} more\`}
+      renderTag={(tag) => (
+        <span className="inline-flex items-center gap-x-1.5 rounded-full px-2.5 py-1 text-xs font-medium bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-600/20">
+          <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+          {tag}
+        </span>
+      )}
+    />
+  );
+}`
+  : `import { TagListOverflow } from "tag-list-overflow";
+
+export function DefaultTagList({ tags }: { tags: string[] }) {
+  return (
+    <TagListOverflow
+      items={tags}
+      maxLines={${maxLines}}
+      gapX={${gapX}}
+      gapY={${gapY}}
+      ${expandable ? "expandable\n      " : ""}overflowLabel={(count) => \`+\${count} more\`}
+    />
+  );
+}`}
+          </pre>
         </div>
-        <pre
-          style={{
-            margin: 0,
-            fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-            fontSize: 14,
-            lineHeight: 1.7,
-            color: "#e2e8f0",
-            whiteSpace: "pre",
-          }}
-        >
-          {"import { TagListOverflow } from 'tag-list-overflow';\n\n"}
-          {"<TagListOverflow\n"}
-          {`  items={tags}\n`}
-          {`  maxLines={${maxLines}}\n`}
-          {`  gapX={${gapX}}\n`}
-          {`  gapY={${gapY}}\n`}
-          {useCustomTags ? `  paddingX={${paddingX}}\n` : ""}
-          {useCustomTags ? `  extraWidth={${extraWidth}} // e.g. dot or icon\n` : ""}
-          {expandable ? `  expandable\n` : ""}
-          {`  overflowLabel={(count) => \`+\${count} more\`}\n`}
-          {useCustomTags
-            ? `  renderTag={(tag) => <CustomBadge>{tag}</CustomBadge>}\n`
-            : ""}
-          {"/>"}
-        </pre>
       </div>
     </div>
   );

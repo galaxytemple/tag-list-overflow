@@ -32,8 +32,10 @@ export function useTagOverflow<T = any>({
   expandable = false,
   expanded,
   onExpandedChange,
+  containerWidth: manualContainerWidth,
 }: UseTagOverflowOptions<T>): UseTagOverflowResult<T> {
-  const { ref: containerRef, width: containerWidth, element } = useContainerWidth();
+  const { ref: containerRef, width: measuredWidth, element } = useContainerWidth();
+  const containerWidth = manualContainerWidth !== undefined ? manualContainerWidth : measuredWidth;
   const [internalExpanded, setInternalExpanded] = useState(false);
 
   const isControlled = expanded !== undefined;

@@ -91,7 +91,70 @@ You can inject your own design system tags, chips, or Tailwind components:
 </TagListOverflow>
 ```
 
-### 3. Custom Overflow Badge & Click-to-Expand
+### 3. Design System Integration (Shadcn UI, HeroUI, Tailwind CSS)
+
+`tag-list-overflow` is built to seamlessly pair with modern UI libraries. Configure top-level metric props (`paddingX`, `fontSize`, `fontWeight`, `extraWidth`) to match your design system for zero-reflow layout prediction:
+
+#### 🖤 Shadcn UI (`Badge`)
+```tsx
+import { TagListOverflow } from "tag-list-overflow";
+import { Badge } from "@/components/ui/badge";
+
+<TagListOverflow
+  items={tags}
+  maxLines={1}
+  gapX={6}
+  gapY={6}
+  paddingX={10}    // matches Shadcn px-2.5 (10px)
+  fontSize={12}    // matches text-xs (12px)
+  fontWeight={600} // matches font-semibold (600)
+  expandable
+  overflowLabel={(count) => `+${count} more`}
+  renderTag={(tag) => <Badge variant="secondary">{tag}</Badge>}
+/>
+```
+
+#### 🚀 HeroUI (NextUI `Chip`)
+```tsx
+import { TagListOverflow } from "tag-list-overflow";
+import { Chip } from "@heroui/react";
+
+<TagListOverflow
+  items={tags}
+  maxLines={2}
+  gapX={6}
+  gapY={6}
+  paddingX={10}   // matches px-2.5
+  fontSize={12}   // matches text-xs
+  fontWeight={500}
+  extraWidth={14} // accounts for dot indicator or avatar icon
+  expandable
+  overflowLabel={(count) => `+${count} more`}
+  renderTag={(tag) => (
+    <Chip variant="dot" color="primary">{tag}</Chip>
+  )}
+/>
+```
+
+#### 🎨 Tailwind CSS Badges
+```tsx
+<TagListOverflow
+  items={tags}
+  maxLines={1}
+  gapX={6}
+  paddingX={10}
+  fontSize={12}
+  extraWidth={12} // accounts for SVG icon/circle
+  renderTag={(tag) => (
+    <span className="inline-flex items-center gap-x-1.5 rounded-full px-2.5 py-1 text-xs font-medium bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-600/20">
+      <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+      {tag}
+    </span>
+  )}
+/>
+```
+
+### 4. Custom Overflow Badge & Click-to-Expand
 Enable `expandable` to let users click `+N more` to expand all tags, or provide a custom button:
 
 ```tsx
@@ -111,7 +174,7 @@ Enable `expandable` to let users click `+N more` to expand all tags, or provide 
 />
 ```
 
-### 4. Internationalization & Custom Labels
+### 5. Internationalization & Custom Labels
 Format the overflow text as a string or function:
 
 ```tsx
@@ -124,7 +187,7 @@ Format the overflow text as a string or function:
 />
 ```
 
-### 5. Partial / Paginated Server Data (`totalCount`)
+### 6. Partial / Paginated Server Data (`totalCount`)
 When only the first page of items is loaded on the client, pass `totalCount` so the overflow counter accurately reflects the total:
 
 ```tsx
@@ -136,7 +199,7 @@ When only the first page of items is loaded on the client, pass `totalCount` so 
 />
 ```
 
-### 6. Independent Horizontal (`gapX`) & Vertical (`gapY`) Spacing
+### 7. Independent Horizontal (`gapX`) & Vertical (`gapY`) Spacing
 ```tsx
 <TagListOverflow
   items={tags}
@@ -146,7 +209,7 @@ When only the first page of items is loaded on the client, pass `totalCount` so 
 />
 ```
 
-### 7. Headless Hook (`useTagOverflow`)
+### 8. Headless Hook (`useTagOverflow`)
 For maximum control over markup, animations (Framer Motion), or virtualized lists, use the headless hook directly:
 
 ```tsx
