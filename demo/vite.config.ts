@@ -4,6 +4,7 @@ import path from "node:path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  base: "./",
   plugins: [tailwindcss(), react()],
   root: path.resolve(__dirname, "."),
   server: {
