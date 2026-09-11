@@ -93,7 +93,16 @@ export function resolveMetrics(
       ? TAG_SIZE_PRESETS[tagSize] ?? TAG_SIZE_PRESETS.md
       : tagSize ?? TAG_SIZE_PRESETS.md;
 
-  const rawFontFamily = overrides?.fontFamily || base.fontFamily || getDefaultFontFamily(container);
+  const rawOverrideFont = overrides?.fontFamily;
+  const validOverrideFont =
+    rawOverrideFont &&
+    rawOverrideFont !== "inherit" &&
+    rawOverrideFont !== "initial" &&
+    rawOverrideFont !== "unset" &&
+    rawOverrideFont !== "revert"
+      ? rawOverrideFont
+      : undefined;
+  const rawFontFamily = validOverrideFont || base.fontFamily || getDefaultFontFamily(container);
   const fontFamily = quoteFontFamilyIfNeeded(rawFontFamily);
   const fontSize = overrides?.fontSize ?? base.fontSize ?? 14;
   const fontWeight = overrides?.fontWeight ?? base.fontWeight ?? 400;
@@ -175,7 +184,12 @@ export function measureBadgeWidth(
   label: string,
   metrics: Required<TagMetricsConfig>,
 ): number {
-  const fontString = `${metrics.fontWeight} ${metrics.fontSize}px ${metrics.fontFamily}`;
+  // Badges are typically rendered with medium/semibold font weight (at least 500)
+  const badgeWeight =
+    typeof metrics.fontWeight === "number"
+      ? Math.max(500, metrics.fontWeight)
+      : metrics.fontWeight || 500;
+  const fontString = `${badgeWeight} ${metrics.fontSize}px ${metrics.fontFamily}`;
   const textWidth = measureTextWidth(ctx, label, fontString);
   return Math.ceil(
     metrics.border * 2 + metrics.overflowPaddingX * 2 + metrics.overflowExtraWidth + textWidth,

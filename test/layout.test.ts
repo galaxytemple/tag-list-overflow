@@ -184,5 +184,16 @@ describe("layout utilities", () => {
       });
       expect(count).toBeGreaterThan(0);
     });
+
+    it("ensures greedyPackWithReserved does not allow a tag on final line if it cannot fit with badge", () => {
+      // Container 200px, maxLines = 2, gapX = 10, reservedWidth = 60
+      // Tag 0: 180px (occupies row 1)
+      // Tag 1: 150px. When wrapped to row 2, tag 1 (150px) + gap (10px) + badge (60px) = 220px > 200px!
+      // Tag 1 cannot fit with badge on row 2.
+      // Result must be 1 (only Tag 0 on row 1, row 2 holds badge alone).
+      const widths = [180, 150, 50];
+      const result = greedyPackWithReserved(widths, 200, 2, 10, 60);
+      expect(result).toBe(1);
+    });
   });
 });

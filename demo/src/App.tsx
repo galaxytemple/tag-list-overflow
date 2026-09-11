@@ -27,6 +27,16 @@ const INITIAL_TAGS = [
   "TanStack Query",
   "Framer Motion",
   "WebAssembly",
+  "Rust",
+  "Python",
+  "Golang",
+  "Supabase",
+  "tRPC",
+  "Bun",
+  "Astro",
+  "Storybook",
+  "Playwright",
+  "Biome",
 ];
 
 const TAILWIND_COLORS = [
@@ -47,11 +57,11 @@ const HEROUI_COLORS = [
 ] as const;
 
 export default function App() {
-  const [designSystem, setDesignSystem] = useState<DesignSystem>("shadcn");
+  const [designSystem, setDesignSystem] = useState<DesignSystem>("default");
   const [tags, setTags] = useState(INITIAL_TAGS);
   const [containerWidth, setContainerWidth] = useState(580);
   const [isFullWidth, setIsFullWidth] = useState(false);
-  const [maxLines, setMaxLines] = useState(1);
+  const [maxLines, setMaxLines] = useState(2);
   const [gapX, setGapX] = useState(6);
   const [gapY, setGapY] = useState(6);
   const [expandable, setExpandable] = useState(true);
@@ -107,7 +117,8 @@ export default function App() {
           fontSize: 14,
           fontWeight: 400,
           extraWidth: 0,
-          fontFamily: 'inherit',
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
         };
     }
   })();

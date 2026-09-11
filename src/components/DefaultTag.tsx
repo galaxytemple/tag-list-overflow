@@ -16,6 +16,7 @@ const baseTagStyle: React.CSSProperties = {
   whiteSpace: "nowrap",
   userSelect: "none",
   boxSizing: "border-box",
+  fontFamily: "inherit",
 };
 
 const defaultColorsStyle: React.CSSProperties = {

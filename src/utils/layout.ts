@@ -237,6 +237,13 @@ export function greedyPackWithReserved(
       if (currentRowWidth > 0) {
         currentRow++;
         if (currentRow > maxLines) return i;
+
+        // When wrapping into the final row, check if this tag can fit with the reserved badge
+        const neededOnNewRow = currentRow === maxLines ? gapX + reservedWidth : 0;
+        if (tagWidths[i] + neededOnNewRow > containerWidth) {
+          return i;
+        }
+
         currentRowWidth = tagWidths[i];
       } else {
         currentRowWidth = widthWithGap;

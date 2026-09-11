@@ -24,7 +24,7 @@ const defaultOverflowStyle: React.CSSProperties = {
   fontWeight: 500,
   userSelect: "none",
   boxSizing: "border-box",
-  background: "none",
+  fontFamily: "inherit",
   appearance: "none",
   cursor: "default",
 };
@@ -32,7 +32,6 @@ const defaultOverflowStyle: React.CSSProperties = {
 const clickableStyle: React.CSSProperties = {
   ...defaultOverflowStyle,
   cursor: "pointer",
-  backgroundColor: "#e5e7eb",
 };
 
 /**
