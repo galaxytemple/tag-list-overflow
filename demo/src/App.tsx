@@ -290,6 +290,7 @@ export default function App() {
             >
               <TagListOverflow
                 items={tags}
+                containerWidth={isFullWidth ? undefined : containerWidth - 40}
                 maxLines={maxLines}
                 gapX={gapX}
                 gapY={gapY}

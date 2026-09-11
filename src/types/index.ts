@@ -127,6 +127,12 @@ export interface TagListOverflowProps<T = any>
   /** Vertical gap between rows in pixels. Default: gap ?? 4 */
   gapY?: number;
 
+  /**
+   * Explicit tag/row height in pixels used for strict line clamping.
+   * If omitted, automatically sampled from the first rendered tag or font metrics.
+   */
+  tagHeight?: number;
+
   /** Custom tag renderer. Can also be provided via children render prop. */
   renderTag?: (item: T, index: number) => React.ReactNode;
 

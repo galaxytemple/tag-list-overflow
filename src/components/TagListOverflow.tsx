@@ -1,6 +1,6 @@
 "use client";
 
-import React, { forwardRef, useMemo } from "react";
+import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { useTagOverflow } from "../hooks/useTagOverflow";
 import type { OverflowInfo, TagListOverflowProps } from "../types";
 import { resolveItemLabel } from "../utils/layout";
@@ -63,6 +63,7 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
     containerWidth,
     className,
     style,
+    tagHeight,
     tagClassName,
     loading = false,
     renderSkeleton,
@@ -72,6 +73,9 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
 
   const resolvedGapX = gapX ?? gap ?? 4;
   const resolvedGapY = gapY ?? gap ?? 4;
+
+  const innerRef = useRef<HTMLDivElement | null>(null);
+  const [measuredTagHeight, setMeasuredTagHeight] = useState<number>(0);
 
   const {
     containerRef,
@@ -107,7 +111,31 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
     onExpandedChange,
   });
 
-  const mergedRef = useMergeRefs<HTMLDivElement>(containerRef, ref);
+  const mergedRef = useMergeRefs<HTMLDivElement>(containerRef, innerRef, ref);
+
+  // Measure actual rendered tag height from the first DOM child for strict visual clamping
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const el = innerRef.current;
+    if (el && el.firstElementChild) {
+      const h = Math.ceil(el.firstElementChild.getBoundingClientRect().height);
+      if (h > 0 && h !== measuredTagHeight) {
+        setMeasuredTagHeight(h);
+      }
+    }
+  });
+
+  const effectiveTagHeight =
+    tagHeight ??
+    (measuredTagHeight > 0
+      ? measuredTagHeight
+      : Math.ceil((fontSize ?? 14) * 1.3 + (paddingX ?? 8) * 0.5 + 8));
+
+  // Clamps maximum height to exactly maxLines rows to prevent visual blinking during rapid resizing
+  const maxAllowedHeight =
+    !isExpanded && maxLines > 0
+      ? effectiveTagHeight * maxLines + resolvedGapY * (maxLines - 1) + 2
+      : undefined;
 
   const overflowInfo: OverflowInfo<T> = useMemo(
     () => ({
@@ -173,6 +201,7 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
     alignItems: "center",
     columnGap: `${resolvedGapX}px`,
     rowGap: `${resolvedGapY}px`,
+    maxHeight: maxAllowedHeight ? `${maxAllowedHeight}px` : undefined,
     overflow: "hidden",
     boxSizing: "border-box",
     ...style,

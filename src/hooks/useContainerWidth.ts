@@ -14,24 +14,16 @@ export interface UseContainerWidthResult {
 export function useContainerWidth(): UseContainerWidthResult {
   const observerRef = useRef<ResizeObserver | null>(null);
   const elementRef = useRef<HTMLElement | null>(null);
-  const rafRef = useRef<number | null>(null);
   const [width, setWidth] = useState(0);
 
   useEffect(() => {
     return () => {
       observerRef.current?.disconnect();
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-      }
     };
   }, []);
 
   const callbackRef = useCallback((node: HTMLElement | null) => {
     observerRef.current?.disconnect();
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
     elementRef.current = node;
 
     if (!node) {
@@ -50,13 +42,9 @@ export function useContainerWidth(): UseContainerWidthResult {
         const entry = entries[0];
         if (entry) {
           const newWidth = Math.floor(entry.contentRect.width);
-          if (rafRef.current !== null) {
-            cancelAnimationFrame(rafRef.current);
-          }
-          rafRef.current = requestAnimationFrame(() => {
+          if (newWidth > 0) {
             setWidth((prev) => (prev === newWidth ? prev : newWidth));
-            rafRef.current = null;
-          });
+          }
         }
       });
 
