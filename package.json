@@ -23,6 +23,7 @@
     "README.md",
     "LICENSE"
   ],
+  "sideEffects": false,
   "scripts": {
     "dev": "vite --config demo/vite.config.ts",
     "build": "tsup",

@@ -123,7 +123,7 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
         setMeasuredTagHeight(h);
       }
     }
-  });
+  }, [tagHeight, tagSize, fontSize, paddingX, items.length, measuredTagHeight]);
 
   const effectiveTagHeight =
     tagHeight ??

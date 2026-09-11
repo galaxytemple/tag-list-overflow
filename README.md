@@ -277,8 +277,25 @@ function CustomTagBar({ tags }) {
 | `loading` | `boolean` | `false` | Shows placeholder skeleton lines when true. |
 | `renderSkeleton` | `() => ReactNode` | `undefined` | Custom skeleton renderer during loading. |
 | `className` | `string` | `undefined` | Class name applied to the container `div`. |
+| `containerWidth` | `number` | `undefined` | Manual container width in px. Overrides ResizeObserver for SSR, tests, or fixed layouts. |
+| `tagHeight` | `number` | `undefined` | Explicit row/tag height in px for strict visual clamping. Auto-detected if omitted. |
 | `style` | `CSSProperties` | `undefined` | Inline styles applied to the container `div`. |
 | `tagClassName` | `string` | `undefined` | Class name applied to default tags. |
+
+### 📐 Tailwind CSS Metric Quick-Reference
+
+When integrating custom badges with Tailwind CSS, use this quick conversion table for zero-reflow layout prediction:
+
+| Tailwind Class | TagListOverflow Prop | Value |
+| :--- | :--- | :--- |
+| `px-2` | `paddingX` | `8` |
+| `px-2.5` *(Shadcn default)* | `paddingX` | `10` |
+| `px-3` | `paddingX` | `12` |
+| `text-xs` | `fontSize` | `12` |
+| `text-sm` | `fontSize` | `14` |
+| `font-medium` | `fontWeight` | `500` |
+| `font-semibold` *(Shadcn default)* | `fontWeight` | `600` |
+| Leading dot / 16px Lucide icon | `extraWidth` | `14` ~ `18` |
 
 ### `OverflowInfo<T>` Object
 Passed to `renderOverflow`:
