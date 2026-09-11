@@ -65,11 +65,20 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
     style,
     tagHeight,
     tagClassName,
+    isLoading,
+    loadingComponent,
     loading = false,
     renderSkeleton,
     role = "list",
     ...domProps
   } = props;
+
+  const isCurrentlyLoading = Boolean(isLoading ?? loading);
+
+  const resolvedLoadingComponent =
+    typeof loadingComponent === "function"
+      ? (loadingComponent as () => React.ReactNode)()
+      : loadingComponent;
 
   const resolvedGapX = gapX ?? gap ?? 4;
   const resolvedGapY = gapY ?? gap ?? 4;
@@ -109,6 +118,7 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
     expandable,
     expanded,
     onExpandedChange,
+    isLoading: isCurrentlyLoading,
   });
 
   const mergedRef = useMergeRefs<HTMLDivElement>(containerRef, innerRef, ref);
@@ -146,20 +156,22 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
       expand,
       collapse,
       toggle,
+      isLoading: isCurrentlyLoading,
     }),
-    [remainingCount, overflowItems, visibleItems, isExpanded, expand, collapse, toggle],
+    [remainingCount, overflowItems, visibleItems, isExpanded, expand, collapse, toggle, isCurrentlyLoading],
   );
 
-  // If loading and skeleton renderer provided
-  if (loading) {
-    if (renderSkeleton) {
-      return (
-        <div ref={mergedRef} className={className} style={style} role={role} {...domProps}>
-          {renderSkeleton()}
-        </div>
-      );
-    }
+  // If custom skeleton renderer provided
+  if (isCurrentlyLoading && renderSkeleton) {
+    return (
+      <div ref={mergedRef} className={className} style={style} role={role} {...domProps}>
+        {renderSkeleton()}
+      </div>
+    );
+  }
 
+  // Legacy skeleton fallback: only when using legacy `loading={true}` without `isLoading` or `loadingComponent`
+  if (loading && isLoading === undefined && !loadingComponent) {
     const skeletonLines = Math.max(1, maxLines);
     return (
       <div
@@ -190,8 +202,25 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
     );
   }
 
-  // Don't render empty container if items is empty
+  // When items is empty
   if (!items || items.length === 0) {
+    if (isCurrentlyLoading && resolvedLoadingComponent) {
+      return (
+        <div
+          ref={mergedRef}
+          className={className}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            ...style,
+          }}
+          role={role}
+          {...domProps}
+        >
+          {resolvedLoadingComponent}
+        </div>
+      );
+    }
     return null;
   }
 
@@ -236,6 +265,12 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
               clickable={expandable}
             />
           )}
+        </React.Fragment>
+      )}
+
+      {isCurrentlyLoading && resolvedLoadingComponent && (
+        <React.Fragment key="__tag_loading_indicator__">
+          {resolvedLoadingComponent}
         </React.Fragment>
       )}
     </div>

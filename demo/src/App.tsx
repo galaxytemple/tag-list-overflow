@@ -65,6 +65,7 @@ export default function App() {
   const [gapX, setGapX] = useState(6);
   const [gapY, setGapY] = useState(6);
   const [expandable, setExpandable] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Design system specific sub-options
   const [shadcnVariant, setShadcnVariant] = useState<"default" | "secondary" | "outline" | "destructive">("secondary");
@@ -81,6 +82,10 @@ export default function App() {
 
   const resetTags = () => {
     setTags(INITIAL_TAGS);
+  };
+
+  const clearTags = () => {
+    setTags([]);
   };
 
   // Compute metrics based on active design system
@@ -300,6 +305,13 @@ export default function App() {
                 extraWidth={metrics.extraWidth}
                 fontFamily={metrics.fontFamily}
                 expandable={expandable}
+                isLoading={isLoading}
+                loadingComponent={
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-blue-300 bg-blue-950/80 border border-blue-800/80 rounded-full animate-pulse shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping" />
+                    Loading...
+                  </span>
+                }
                 overflowLabel={(count) => `+${count} more`}
                 collapseLabel="Show less ↑"
                 renderTag={
@@ -416,20 +428,31 @@ export default function App() {
               </div>
             </div>
 
-            {/* Expandable Toggle */}
+            {/* Expandable & Loading Toggle */}
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-2">
-                Interaction
+                Interaction & State
               </label>
-              <label className="flex items-center gap-2 p-1.5 bg-slate-800/60 rounded-lg border border-slate-700/80 cursor-pointer hover:bg-slate-800 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={expandable}
-                  onChange={(e) => setExpandable(e.target.checked)}
-                  className="accent-blue-500 rounded"
-                />
-                <span className="text-xs font-medium text-slate-300">Expandable Badge</span>
-              </label>
+              <div className="flex gap-2">
+                <label className="flex-1 flex items-center gap-1.5 p-1.5 bg-slate-800/60 rounded-lg border border-slate-700/80 cursor-pointer hover:bg-slate-800 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={expandable}
+                    onChange={(e) => setExpandable(e.target.checked)}
+                    className="accent-blue-500 rounded"
+                  />
+                  <span className="text-xs font-medium text-slate-300">Expandable</span>
+                </label>
+                <label className="flex-1 flex items-center gap-1.5 p-1.5 bg-slate-800/60 rounded-lg border border-slate-700/80 cursor-pointer hover:bg-slate-800 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={isLoading}
+                    onChange={(e) => setIsLoading(e.target.checked)}
+                    className="accent-blue-500 rounded"
+                  />
+                  <span className="text-xs font-medium text-blue-400">isLoading</span>
+                </label>
+              </div>
             </div>
 
             {/* Tag Count Actions */}
@@ -451,6 +474,13 @@ export default function App() {
                   className="flex-1 py-1 text-xs rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 cursor-pointer font-medium"
                 >
                   - Remove
+                </button>
+                <button
+                  type="button"
+                  onClick={clearTags}
+                  className="flex-1 py-1 text-xs rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 cursor-pointer font-medium"
+                >
+                  Empty
                 </button>
                 <button
                   type="button"

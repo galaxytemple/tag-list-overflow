@@ -136,4 +136,67 @@ describe("TagListOverflow component", () => {
     );
     expect(screen.getByText("Admin")).toBeDefined();
   });
+
+  describe("isLoading & loadingComponent pagination UX", () => {
+    it("renders nothing when items is empty and isLoading is true without loadingComponent", () => {
+      const { container } = render(
+        <TagListOverflow items={[]} isLoading={true} />,
+      );
+      expect(container.firstChild).toBeNull();
+    });
+
+    it("renders loadingComponent when items is empty and isLoading is true", () => {
+      render(
+        <TagListOverflow
+          items={[]}
+          isLoading={true}
+          loadingComponent={<span data-testid="empty-spinner">Loading...</span>}
+        />,
+      );
+      expect(screen.getByTestId("empty-spinner").textContent).toBe("Loading...");
+    });
+
+    it("renders loadingComponent right after the overflow badge when isLoading is true", () => {
+      const manyItems = ["Tag1", "Tag2", "Tag3", "Tag4", "Tag5", "Tag6", "Tag7"];
+      render(
+        <TagListOverflow
+          items={manyItems}
+          containerWidth={150}
+          maxLines={1}
+          isLoading={true}
+          loadingComponent={<div data-testid="active-spinner">Fetching more...</div>}
+        />,
+      );
+
+      expect(screen.getByText(/\+\d+ more/)).toBeDefined();
+      expect(screen.getByTestId("active-spinner").textContent).toBe("Fetching more...");
+    });
+
+    it("does not render any loader when isLoading is true but loadingComponent is omitted", () => {
+      const manyItems = ["Tag1", "Tag2", "Tag3", "Tag4", "Tag5"];
+      const { container } = render(
+        <TagListOverflow
+          items={manyItems}
+          containerWidth={150}
+          maxLines={1}
+          isLoading={true}
+        />,
+      );
+
+      expect(screen.getByText(/\+\d+ more/)).toBeDefined();
+      expect(container.querySelector("[data-testid='active-spinner']")).toBeNull();
+    });
+
+    it("supports loadingComponent as a render function", () => {
+      render(
+        <TagListOverflow
+          items={[]}
+          isLoading={true}
+          loadingComponent={() => <span data-testid="fn-spinner">Function Spinner</span>}
+        />,
+      );
+      expect(screen.getByTestId("fn-spinner").textContent).toBe("Function Spinner");
+    });
+  });
 });
+

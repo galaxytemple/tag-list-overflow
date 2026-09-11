@@ -51,6 +51,8 @@ export interface OverflowInfo<T = any> {
   collapse: () => void;
   /** Toggle between expanded and collapsed states */
   toggle: () => void;
+  /** Whether loading state is currently active */
+  isLoading?: boolean;
 }
 
 /**
@@ -87,6 +89,10 @@ export interface UseTagOverflowOptions<T = any> extends TagLayoutMetricsProps {
   expanded?: boolean;
   /** Controlled expansion state change callback */
   onExpandedChange?: (expanded: boolean) => void;
+  /** Whether the list is actively fetching or paginating data */
+  isLoading?: boolean;
+  /** Backward-compatible alias for isLoading */
+  loading?: boolean;
 }
 
 /**
@@ -115,6 +121,8 @@ export interface UseTagOverflowResult<T = any> {
   collapse: () => void;
   /** Toggle between expanded and collapsed states */
   toggle: () => void;
+  /** Whether loading state is currently active */
+  isLoading: boolean;
 }
 
 /**
@@ -154,9 +162,25 @@ export interface TagListOverflowProps<T = any>
   /** Additional className for individual default tags */
   tagClassName?: string;
 
-  /** Whether the component is in a loading state */
+  /**
+   * Whether the component is in a loading state (e.g. paginating/fetching server tags).
+   */
+  isLoading?: boolean;
+
+  /**
+   * Component or render function to display during loading.
+   * Rendered right after the "+N more" badge when items exist,
+   * or standalone if the items array is empty.
+   * If omitted, nothing extra is rendered even when isLoading is true.
+   */
+  loadingComponent?: React.ReactNode | (() => React.ReactNode);
+
+  /**
+   * Backward-compatible loading state flag.
+   * Prefer using `isLoading`.
+   */
   loading?: boolean;
 
-  /** Custom skeleton renderer for loading state */
+  /** Custom skeleton renderer for initial loading state */
   renderSkeleton?: () => React.ReactNode;
 }

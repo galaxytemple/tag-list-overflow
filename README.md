@@ -6,7 +6,7 @@
 [![license](https://img.shields.io/npm/l/tag-list-overflow)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 
-> **Zero-reflow, responsive React tag & chip list component** with dynamic line-clamp (`maxLines`) and a customizable `+N more` overflow badge. Predicts layout off-DOM using Canvas 2D with **zero layout shifts (CLS: 0)** and **60fps fluid resizing**. Inspired by [Pretext](https://pretextjs.net).
+> **Zero-reflow, responsive React tag & chip list component** with dynamic line-clamp (`maxLines`) and a customizable `+N more` overflow badge. Predicts layout off-DOM using Canvas 2D with **Zero-Reflow by Design (CLS: 0 on client paint)** and **60fps fluid resizing**. Inspired by [Pretext](https://pretextjs.net).
 
 <p align="center">
   <img src="./.github/assets/demo.gif" alt="tag-list-overflow zero-reflow responsive demo" width="760" />
@@ -45,16 +45,24 @@ export function Example() {
 
 ## 🔍 Why `tag-list-overflow`?
 
-### The Problem
-1. **CSS `line-clamp` doesn't work on tags**: CSS `-webkit-line-clamp` only truncates plain multi-line text paragraphs. It cannot clamp `flex-wrap` badge/chip rows, nor can it dynamically calculate and reserve space for a `+N more` overflow counter on the final line.
-2. **DOM-based measurement causes layout thrashing**: Measuring elements via `getBoundingClientRect()` or `offsetWidth` after render forces synchronous browser reflows (layout thrashing), causing visible flickering, jitter, and poor Cumulative Layout Shift (CLS).
+### The Problem with Existing Solutions
+1. **CSS `line-clamp` doesn't work on tags**: CSS `-webkit-line-clamp` only truncates uniform multi-line paragraphs. It cannot clamp `flex-wrap` tag/chip rows, nor can it dynamically calculate and reserve exact pixel space for a `+N more` overflow counter on the final row.
+2. **Traditional DOM libraries cause jarring Layout Shifts (High CLS)**:
+   Traditional tag overflow libraries rely on a flawed **2-Pass Render** cycle:
+   - **Pass 1**: Mount *all* 30+ tags into the DOM (`height: ~200px`).
+   - **Pass 2**: In `useEffect` / `useLayoutEffect`, read `getBoundingClientRect()` or `offsetTop` across all elements (forcing synchronous browser reflows), calculate which tags overflow, and unmount them (`height collapses to ~36px`).
+   - **The Result**: Surrounding content jumps upward by ~160px after the page is already visible, generating significant Cumulative Layout Shift (CLS 0.2 ~ 0.4) and visible page flickering.
 
 ### The Solution (Inspired by [Pretext](https://pretextjs.net))
 Inspired by the pure mathematical layout paradigm pioneered by [Pretext](https://pretextjs.net), `tag-list-overflow` pre-computes the exact pixel width of tags completely **off-DOM** using HTML5 Canvas 2D text metrics and a multi-pass greedy packing algorithm:
-- **0 Layout Shift (CLS: 0)**: Only the visible items and the badge are rendered into the DOM on the very first paint. Hidden items are not mounted to the DOM tree at all (true DOM virtualization).
-- **60fps Fluid Resizing**: Resizes in `< 0.0001ms` via pure integer math on pre-measured `Float32Array` widths.
-- **SSR & Next.js App Router Ready**: Shipped with `"use client";` directive at line 1, SSR-safe without hydration mismatches.
+- **Zero-Reflow by Design (CLS: 0 on client paint)**: Only the visible items and the badge are rendered into the DOM on the very first frame. Hidden items are never mounted to the DOM tree (true DOM virtualization).
+- **60fps Fluid Resizing**: Resizes in `< 0.0001ms` via integer math on pre-measured `Float32Array` widths.
+- **SSR & Next.js App Router Ready**: Shipped with `"use client";` directive at line 1. Supports optional `containerWidth` for 1-frame SSR layout matching.
 - **Zero Runtime Dependencies**: 100% lightweight pure TypeScript (< 3kB min+gzip).
+
+> [!NOTE]
+> **Engineering Transparency (CLS & SSR)**:
+> In client-rendered applications (CSR, SPA, modals, tabs, dashboards), CLS is **0** because layout is calculated before the first DOM paint. In SSR (e.g. Next.js App Router), since Node.js lacks the user's viewport width prior to browser hydration, pass an estimated or fixed `containerWidth` (e.g. `containerWidth={600}`) to achieve zero layout shifts on initial HTML hydration. For custom web fonts, ensure `@font-face` is preloaded or specify `fontFamily`.
 
 ### 📊 Feature Comparison
 
@@ -62,7 +70,7 @@ Inspired by the pure mathematical layout paradigm pioneered by [Pretext](https:/
 | :--- | :---: | :---: | :---: |
 | **Flex-Wrap Tag Lists** | ❌ Text-only | ⚠️ Requires post-render reflow | ✅ **Instant off-DOM prediction** |
 | **Dynamic `+N more` Badge** | ❌ Not possible | ⚠️ Forces layout shifts | ✅ **Exact space pre-reserved** |
-| **Cumulative Layout Shift (CLS)** | 0 | ❌ High (flickering & jumping) | ✅ **0 (Zero-Reflow)** |
+| **Cumulative Layout Shift (CLS)** | 0 | ❌ High (flickering & jumping) | ✅ **0 on Client** *(Zero 2-pass shifts)* |
 | **Resize Performance** | Native | ❌ Slow (DOM reads every frame) | ✅ **< 0.0001ms (Pure math)** |
 | **DOM Virtualization** | ❌ N/A | ❌ Hides excess items via CSS | ✅ **Only visible tags mounted** |
 | **Next.js App Router (RSC)** | ✅ | ⚠️ Hydration mismatches | ✅ **`"use client";` compatible** |
@@ -210,16 +218,50 @@ Format the overflow text as a string or function:
 />
 ```
 
-### 6. Partial / Paginated Server Data (`totalCount`)
-When only the first page of items is loaded on the client, pass `totalCount` so the overflow counter accurately reflects the total:
+### 6. Partial / Paginated Server Data (`totalCount`, `isLoading`, `loadingComponent`)
+When tags are paginated or fetched asynchronously from a database:
+- Use `totalCount` so the overflow counter accurately displays the total remaining count (e.g. `+147 more` instead of just loaded tags).
+- Use `isLoading` and `loadingComponent` to display an inline spinner right after the overflow/expand badge.
+- **Empty State Behavior**: If `items` is empty and `isLoading={true}`, `loadingComponent` is rendered standalone. If `loadingComponent` is omitted, nothing is rendered (`null`).
+- **Expand Trigger**: Setting `isLoading={true}` when expanded is fully controlled in your application state via `onExpandedChange`.
 
 ```tsx
-// Loaded 10 items, but database has 150 items
-<TagListOverflow
-  items={loadedTags}   // length: 10
-  totalCount={150}     // renders e.g. "+145 more"
-  maxLines={1}
-/>
+import { useState } from "react";
+import { TagListOverflow } from "tag-list-overflow";
+
+function PaginatedTagsExample() {
+  const [tags, setTags] = useState(["React", "TypeScript", "Tailwind"]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleExpandedChange = async (expanded: boolean) => {
+    if (expanded && tags.length < 150) {
+      setIsLoading(true);
+      const newTags = await fetchNextPageTags();
+      setTags((prev) => [...prev, ...newTags]);
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <TagListOverflow
+      items={tags}
+      totalCount={150} // Tells badge to display e.g. "+147 more"
+      maxLines={1}
+      expandable
+      isLoading={isLoading}
+      loadingComponent={
+        <span className="inline-flex items-center gap-1 text-xs text-indigo-500 animate-pulse">
+          <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+          </svg>
+          Loading...
+        </span>
+      }
+      onExpandedChange={handleExpandedChange}
+    />
+  );
+}
 ```
 
 ### 7. Independent Horizontal (`gapX`) & Vertical (`gapY`) Spacing
@@ -297,7 +339,9 @@ function CustomTagBar({ tags }) {
 | `getItemKey` | `(item: T, index: number) => Key` | `Auto` | Extracts React key. Defaults to `item.id ?? item.key ?? index`. |
 | `getItemWidth` | `(item: T, index: number, ctx: CanvasRenderingContext2D) => number` | `undefined` | Optional override for calculating item width. |
 | `totalCount` | `number` | `undefined` | Total count for server-paginated data. |
-| `loading` | `boolean` | `false` | Shows placeholder skeleton lines when true. |
+| `isLoading` | `boolean` | `false` | Whether tags are actively being fetched/paginated from server. |
+| `loadingComponent` | `ReactNode \| (() => ReactNode)` | `undefined` | Element rendered right after the overflow badge (or alone if items is empty). |
+| `loading` | `boolean` | `false` | Backward-compatible loading flag. |
 | `renderSkeleton` | `() => ReactNode` | `undefined` | Custom skeleton renderer during loading. |
 | `className` | `string` | `undefined` | Class name applied to the container `div`. |
 | `containerWidth` | `number` | `undefined` | Manual container width in px. Overrides ResizeObserver for SSR, tests, or fixed layouts. |

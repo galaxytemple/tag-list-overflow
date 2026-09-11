@@ -33,7 +33,10 @@ export function useTagOverflow<T = any>({
   expanded,
   onExpandedChange,
   containerWidth: manualContainerWidth,
+  isLoading,
+  loading,
 }: UseTagOverflowOptions<T>): UseTagOverflowResult<T> {
+  const isCurrentlyLoading = Boolean(isLoading ?? loading);
   const { ref: containerRef, width: measuredWidth, element } = useContainerWidth();
   const containerWidth = manualContainerWidth !== undefined ? manualContainerWidth : measuredWidth;
   const [internalExpanded, setInternalExpanded] = useState(false);
@@ -158,5 +161,6 @@ export function useTagOverflow<T = any>({
     expand,
     collapse,
     toggle,
+    isLoading: isCurrentlyLoading,
   };
 }
