@@ -7,6 +7,10 @@
 
 > **Zero-reflow, responsive React tag & chip list component** with dynamic line-clamp (`maxLines`) and a customizable `+N more` overflow badge. Predicts layout off-DOM using Canvas 2D with **zero layout shifts (CLS: 0)** and **60fps fluid resizing**.
 
+<p align="center">
+  <img src="./.github/assets/demo.gif" alt="tag-list-overflow zero-reflow responsive demo" width="760" />
+</p>
+
 ---
 
 ## ⚡ Quick Demo
