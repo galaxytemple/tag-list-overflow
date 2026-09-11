@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/tag-list-overflow?color=blue)](https://www.npmjs.com/package/tag-list-overflow)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/tag-list-overflow?color=success)](https://bundlephobia.com/package/tag-list-overflow)
 [![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/galaxytemple/tag-list-overflow)
-[![license](https://img.shields.io/npm/l/tag-list-overflow)](./LICENSE)
+[![license](https://img.shields.io/github/license/galaxytemple/tag-list-overflow)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 
 > **Zero-reflow, responsive React tag & chip list component** with dynamic line-clamp (`maxLines`) and a customizable `+N more` overflow badge. Predicts layout off-DOM using Canvas 2D with **Zero-Reflow by Design (CLS: 0 on client paint)** and **60fps fluid resizing**. Inspired by [Pretext](https://pretextjs.net).
