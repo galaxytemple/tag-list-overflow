@@ -136,8 +136,7 @@ export function packTagLayout({
   const remainingFromFit = Math.max(1, total - baseFit);
   const moreText = formatOverflowText(remainingFromFit, overflowLabel);
   const moreTagWidth = measureBadgeWidth(ctx, moreText, metrics);
-  // Add 2px subpixel safety buffer so real DOM font-rendering variations never push the badge to an extra row
-  const totalReservedWidth = moreTagWidth + 2 + (loadingWidth > 0 ? gapX + loadingWidth : 0);
+  const totalReservedWidth = moreTagWidth + (loadingWidth > 0 ? gapX + loadingWidth : 0);
 
   const adjustedCount = greedyPackWithReserved(
     tagWidths,
@@ -152,7 +151,7 @@ export function packTagLayout({
     const newRemaining = total - adjustedCount;
     const newMoreText = formatOverflowText(newRemaining, overflowLabel);
     const newMoreWidth = measureBadgeWidth(ctx, newMoreText, metrics);
-    const newTotalReserved = newMoreWidth + 2 + (loadingWidth > 0 ? gapX + loadingWidth : 0);
+    const newTotalReserved = newMoreWidth + (loadingWidth > 0 ? gapX + loadingWidth : 0);
 
     if (newMoreWidth > moreTagWidth) {
       const finalCount = greedyPackWithReserved(

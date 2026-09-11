@@ -6,6 +6,11 @@ import {
   greedyPackWithReserved,
   resolveItemLabel,
 } from "../src/utils/layout";
+import {
+  getCanvasContext,
+  measureBadgeWidth,
+  resolveMetrics,
+} from "../src/utils/measure";
 
 describe("layout utilities", () => {
   describe("greedyPack", () => {
@@ -211,6 +216,26 @@ describe("layout utilities", () => {
       });
       // Reserving 40px for loading spinner should leave less room for tags
       expect(withLoading).toBeLessThanOrEqual(withoutLoading);
+    });
+
+    it("does not under-pack tags when maxLines >= 2 (accurately packs exact threshold without premature 2-tag jumps)", () => {
+      // Test that when containerWidth is exactly wide enough for 3 tags + badge across 2 rows,
+      // greedyPackWithReserved does not drop Tag 2.
+      // Row 1: 60 + 8 + 60 = 128px
+      // Row 2: 60 + 8 + badgeWidth = 68 + badgeWidth
+      const metrics = resolveMetrics("md");
+      const ctx = getCanvasContext();
+      const badgeWidth = measureBadgeWidth(ctx, "+7 more", metrics);
+      const exactWidth = Math.max(128, 68 + badgeWidth);
+
+      const count = computeVisibleTagCount({
+        items: Array.from({ length: 10 }, (_, i) => `Tag${i}`),
+        containerWidth: exactWidth,
+        maxLines: 2,
+        gapX: 8,
+        getItemWidth: () => 60,
+      });
+      expect(count).toBe(3);
     });
   });
 });

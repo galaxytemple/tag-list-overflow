@@ -291,5 +291,132 @@ describe("TagListOverflow component", () => {
       expect(screen.getByText("SafeTag")).toBeDefined();
     });
   });
+
+  describe("Polymorphic 'as' prop support", () => {
+    it("renders as a <div> by default", () => {
+      const { container } = render(<TagListOverflow items={["Item 1"]} />);
+      expect(container.firstElementChild?.tagName).toBe("DIV");
+    });
+
+    it("renders as an unordered list <ul role='list'> when as='ul'", () => {
+      const { container } = render(
+        <TagListOverflow
+          as="ul"
+          items={["Alpha", "Beta"]}
+          aria-label="Tags list"
+        />,
+      );
+      const listEl = container.firstElementChild;
+      expect(listEl?.tagName).toBe("UL");
+      expect(listEl?.getAttribute("role")).toBe("list");
+      expect(listEl?.getAttribute("aria-label")).toBe("Tags list");
+      expect(screen.getByText("Alpha")).toBeDefined();
+      expect(screen.getByText("Beta")).toBeDefined();
+    });
+
+    it("renders as an ordered list <ol> when as='ol'", () => {
+      const { container } = render(
+        <TagListOverflow as="ol" items={["First", "Second"]} />,
+      );
+      expect(container.firstElementChild?.tagName).toBe("OL");
+    });
+
+    it("renders as a <nav> landmark element and preserves navigation semantics", () => {
+      const { container } = render(
+        <TagListOverflow
+          as="nav"
+          items={["Home", "Docs", "API"]}
+          aria-label="Breadcrumbs"
+        />,
+      );
+      const navEl = container.firstElementChild;
+      expect(navEl?.tagName).toBe("NAV");
+      expect(navEl?.getAttribute("aria-label")).toBe("Breadcrumbs");
+      // Default role on nav should not override navigation landmark
+      expect(navEl?.getAttribute("role")).toBeNull();
+    });
+
+    it("allows explicitly overriding role when using as='nav'", () => {
+      const { container } = render(
+        <TagListOverflow
+          as="nav"
+          role="navigation"
+          items={["Home", "Docs"]}
+        />,
+      );
+      expect(container.firstElementChild?.getAttribute("role")).toBe("navigation");
+    });
+
+    it("renders as a <section> element", () => {
+      const { container } = render(
+        <TagListOverflow as="section" items={["Section Tag"]} />,
+      );
+      expect(container.firstElementChild?.tagName).toBe("SECTION");
+    });
+
+    it("forwards ref to the polymorphic element", () => {
+      let ulRef: HTMLUListElement | null = null;
+      render(
+        <TagListOverflow
+          as="ul"
+          items={["RefTag"]}
+          ref={(node) => {
+            ulRef = node;
+          }}
+        />,
+      );
+      expect(ulRef).not.toBeNull();
+      expect((ulRef as unknown as HTMLUListElement)?.tagName).toBe("UL");
+    });
+
+    it("supports custom tag rendering inside polymorphic container", () => {
+      render(
+        <TagListOverflow
+          as="ul"
+          items={["ItemA", "ItemB"]}
+          renderTag={(item) => (
+            <li key={item} data-testid="custom-li">
+              {item}
+            </li>
+          )}
+        />,
+      );
+      const listItems = screen.getAllByTestId("custom-li");
+      expect(listItems.length).toBe(2);
+      expect(listItems[0].tagName).toBe("LI");
+      expect(listItems[0].textContent).toBe("ItemA");
+    });
+
+    it("renders overflow badge and handles expansion in polymorphic container", () => {
+      render(
+        <TagListOverflow
+          as="ul"
+          items={["Tag 1", "Tag 2", "Tag 3", "Tag 4", "Tag 5"]}
+          containerWidth={120}
+          maxLines={1}
+          expandable={true}
+        />,
+      );
+      const overflowBadge = screen.getByText(/\+\d+ more/);
+      expect(overflowBadge).toBeDefined();
+
+      fireEvent.click(overflowBadge);
+      expect(screen.getByText("Show less")).toBeDefined();
+    });
+
+    it("renders loading indicator in polymorphic container when empty or paginating", () => {
+      const { container } = render(
+        <TagListOverflow
+          as="ul"
+          items={[]}
+          isLoading={true}
+          loadingComponent={<span data-testid="poly-loader">Loading...</span>}
+        />,
+      );
+      expect(container.firstElementChild?.tagName).toBe("UL");
+      expect(screen.getByTestId("poly-loader").textContent).toBe("Loading...");
+    });
+  });
 });
+
 

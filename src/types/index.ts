@@ -95,8 +95,8 @@ export interface UseTagOverflowOptions<T = any> extends TagLayoutMetricsProps {
   loading?: boolean;
   /**
    * Reserved width in pixels for loadingComponent on the final line.
-   * If omitted, automatically measured from the rendered loadingComponent element
-   * (with Canvas text estimation fallback) to prevent overflow clipping.
+   * If omitted, automatically estimated off-DOM via Canvas text metrics
+   * (or defaults to 24px for icon spinners) to prevent overflow clipping.
    */
   loadingWidth?: number;
 }
@@ -132,18 +132,21 @@ export interface UseTagOverflowResult<T = any> {
 }
 
 /**
- * Props for the TagListOverflow / TagOverflow component.
- * Extends native HTML div attributes for full DOM customization.
+ * Utility type to extract ref type from an ElementType
  */
-export interface TagListOverflowProps<T = any>
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, "children" | "style">,
-    UseTagOverflowOptions<T> {
+export type PolymorphicRef<C extends React.ElementType> =
+  React.ComponentPropsWithRef<C>["ref"];
+
+/**
+ * Base props for TagListOverflow without element-specific HTML attributes.
+ */
+export interface TagListOverflowBaseProps<T = any> extends UseTagOverflowOptions<T> {
   /** Vertical gap between rows in pixels. Default: gap ?? 4 */
   gapY?: number;
 
   /**
    * Explicit tag/row height in pixels used for strict line clamping.
-   * If omitted, automatically sampled from the first rendered tag or font metrics.
+   * If omitted, automatically derived from font and padding metrics.
    */
   tagHeight?: number;
 
@@ -190,3 +193,33 @@ export interface TagListOverflowProps<T = any>
   /** Custom skeleton renderer for initial loading state */
   renderSkeleton?: () => React.ReactNode;
 }
+
+/**
+ * Props for the polymorphic TagListOverflow / TagOverflow component.
+ * Allows customizing the root container element via the `as` prop (e.g. "div", "nav", "ul", "section"),
+ * while preserving native HTML attributes, ref type, and accessibility attributes.
+ */
+export type TagListOverflowProps<
+  T = any,
+  C extends React.ElementType = "div",
+> = TagListOverflowBaseProps<T> & {
+  /**
+   * The underlying HTML element or React component to render as the container.
+   * Default: "div"
+   */
+  as?: C;
+} & Omit<
+    React.ComponentPropsWithoutRef<C>,
+    keyof TagListOverflowBaseProps<T> | "as" | "children" | "style"
+  >;
+
+/**
+ * Generic component interface for TagListOverflow supporting the polymorphic `as` prop and forwarded ref.
+ */
+export interface TagListOverflowComponent {
+  <T = any, C extends React.ElementType = "div">(
+    props: TagListOverflowProps<T, C> & { ref?: PolymorphicRef<C> },
+  ): React.ReactElement | null;
+  displayName?: string;
+}
+

@@ -8,8 +8,8 @@ export interface UseContainerWidthResult {
 
 /**
  * Hook that tracks the width of a container element via ResizeObserver.
- * Throttled using requestAnimationFrame to match the browser refresh rate (60fps/120fps)
- * without triggering redundant renders or stuttering.
+ * Leverages React 18 automatic batching to match the browser refresh rate (60fps/120fps)
+ * without triggering redundant renders or layout thrashing.
  */
 export function useContainerWidth(): UseContainerWidthResult {
   const observerRef = useRef<ResizeObserver | null>(null);

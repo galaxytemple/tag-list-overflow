@@ -2,21 +2,17 @@
 
 import React, {
   forwardRef,
-  useEffect,
-  useLayoutEffect,
   useMemo,
-  useRef,
-  useState,
 } from "react";
 import { useTagOverflow } from "../hooks/useTagOverflow";
-import type { OverflowInfo, TagListOverflowProps } from "../types";
+import type {
+  OverflowInfo,
+  TagListOverflowComponent,
+} from "../types";
 import { resolveItemLabel } from "../utils/layout";
 import { getCanvasContext } from "../utils/measure";
 import { DefaultOverflow } from "./DefaultOverflow";
 import { DefaultTag } from "./DefaultTag";
-
-const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 /**
  * Recursively extracts plain text content from React children or JSX nodes
@@ -52,13 +48,15 @@ function useMergeRefs<T>(...refs: (React.Ref<T> | undefined)[]) {
 }
 
 /**
- * Internal implementation of TagListOverflow with ref forwarding.
+ * Internal implementation of TagListOverflow with ref forwarding and polymorphic rendering.
+ * 100% off-DOM layout calculation: zero DOM-read reflows, zero child ResizeObservers.
  */
-const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
-  props: TagListOverflowProps<T>,
-  ref: React.ForwardedRef<HTMLDivElement>,
+const TagListOverflowInner = forwardRef(function TagListOverflowInner(
+  props: any,
+  ref: any,
 ) {
   const {
+    as: Component = "div" as any,
     items,
     maxLines = 1,
     gapX,
@@ -95,10 +93,17 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
     loadingComponent,
     loading = false,
     renderSkeleton,
-    role = "list",
+    role: customRole,
     loadingWidth,
     ...domProps
   } = props;
+
+  const role =
+    customRole !== undefined
+      ? customRole
+      : Component === "nav"
+        ? undefined
+        : "list";
 
   const isCurrentlyLoading = Boolean(isLoading ?? loading);
 
@@ -110,50 +115,16 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
   const resolvedGapX = gapX ?? gap ?? 4;
   const resolvedGapY = gapY ?? gap ?? 4;
 
-  const innerRef = useRef<HTMLDivElement | null>(null);
-  const loadingIndicatorRef = useRef<HTMLSpanElement | null>(null);
-  const [measuredTagHeight, setMeasuredTagHeight] = useState<number>(0);
-  const [measuredLoadingWidth, setMeasuredLoadingWidth] = useState<number>(0);
-
-  // Auto-measure rendered loadingComponent width
-  useIsomorphicLayoutEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!isCurrentlyLoading || !resolvedLoadingComponent) {
-      if (measuredLoadingWidth !== 0) setMeasuredLoadingWidth(0);
-      return;
-    }
-    const el = loadingIndicatorRef.current;
-    if (!el) return;
-
-    const measure = () => {
-      const w = Math.ceil(el.getBoundingClientRect().width);
-      if (w > 0 && w !== measuredLoadingWidth) {
-        setMeasuredLoadingWidth(w);
-      }
-    };
-
-    measure();
-
-    if (typeof ResizeObserver !== "undefined") {
-      const ro = new ResizeObserver(() => {
-        measure();
-      });
-      ro.observe(el);
-      return () => ro.disconnect();
-    }
-  }, [isCurrentlyLoading, resolvedLoadingComponent, measuredLoadingWidth]);
-
-  // Initial estimate before DOM measurement, or fallback in test / SSR environments
-  const estimatedLoadingWidth = useMemo(() => {
+  // Pure off-DOM text estimation via Canvas 2D for loadingComponent width (or explicit loadingWidth prop)
+  const effectiveLoadingWidth = useMemo(() => {
     if (!isCurrentlyLoading || !resolvedLoadingComponent) return 0;
     if (loadingWidth !== undefined) return loadingWidth;
-    if (measuredLoadingWidth > 0) return measuredLoadingWidth;
 
     const text = extractTextContent(resolvedLoadingComponent).trim();
     if (text) {
       const ctx = getCanvasContext();
       if (ctx) {
-        ctx.font = `${fontWeight ?? 500} ${fontSize ?? 12}px ${fontFamily ?? 'system-ui, sans-serif'}`;
+        ctx.font = `${fontWeight ?? 500} ${fontSize ?? 12}px ${fontFamily ?? "system-ui, sans-serif"}`;
         const textW = ctx.measureText(text).width;
         // Text width + pill horizontal padding (~20px) + indicator dot & gap (~16px) + border (2px)
         return Math.ceil(textW + 38);
@@ -165,18 +136,10 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
     isCurrentlyLoading,
     resolvedLoadingComponent,
     loadingWidth,
-    measuredLoadingWidth,
     fontSize,
     fontWeight,
     fontFamily,
   ]);
-
-  const effectiveLoadingWidth =
-    loadingWidth !== undefined
-      ? loadingWidth
-      : measuredLoadingWidth > 0
-        ? measuredLoadingWidth
-        : estimatedLoadingWidth;
 
   const {
     containerRef,
@@ -214,25 +177,12 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
     loadingWidth: effectiveLoadingWidth,
   });
 
-  const mergedRef = useMergeRefs<HTMLDivElement>(containerRef, innerRef, ref);
+  const mergedRef = useMergeRefs<any>(containerRef, ref);
 
-  // Measure actual rendered tag height from the first DOM child for strict visual clamping
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const el = innerRef.current;
-    if (el && el.firstElementChild) {
-      const h = Math.ceil(el.firstElementChild.getBoundingClientRect().height);
-      if (h > 0 && h !== measuredTagHeight) {
-        setMeasuredTagHeight(h);
-      }
-    }
-  }, [tagHeight, tagSize, fontSize, paddingX, items.length, measuredTagHeight]);
-
+  // Pure mathematical tag height derived from font metrics & padding (or explicit tagHeight prop)
   const effectiveTagHeight =
     tagHeight ??
-    (measuredTagHeight > 0
-      ? measuredTagHeight
-      : Math.ceil((fontSize ?? 14) * 1.3 + (paddingX ?? 8) * 0.5 + 8));
+    Math.ceil((fontSize ?? 14) * 1.3 + (paddingX ?? 8) * 0.5 + 8);
 
   // Clamps maximum height to exactly maxLines rows to prevent visual blinking during rapid resizing
   const maxAllowedHeight =
@@ -240,7 +190,7 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
       ? effectiveTagHeight * maxLines + resolvedGapY * (maxLines - 1) + 2
       : undefined;
 
-  const overflowInfo: OverflowInfo<T> = useMemo(
+  const overflowInfo: OverflowInfo<any> = useMemo(
     () => ({
       count: remainingCount,
       overflowItems,
@@ -257,9 +207,9 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
   // If custom skeleton renderer provided
   if (isCurrentlyLoading && renderSkeleton) {
     return (
-      <div ref={mergedRef} className={className} style={style} role={role} {...domProps}>
+      <Component ref={mergedRef} className={className} style={style} role={role} {...domProps}>
         {renderSkeleton()}
-      </div>
+      </Component>
     );
   }
 
@@ -267,7 +217,7 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
   if (loading && isLoading === undefined && !loadingComponent) {
     const skeletonLines = Math.max(1, maxLines);
     return (
-      <div
+      <Component
         ref={mergedRef}
         className={className}
         role={role}
@@ -291,7 +241,7 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
             }}
           />
         ))}
-      </div>
+      </Component>
     );
   }
 
@@ -299,7 +249,7 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
   if (!items || items.length === 0) {
     if (isCurrentlyLoading && resolvedLoadingComponent) {
       return (
-        <div
+        <Component
           ref={mergedRef}
           className={className}
           style={{
@@ -311,7 +261,7 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
           {...domProps}
         >
           {resolvedLoadingComponent}
-        </div>
+        </Component>
       );
     }
     return null;
@@ -337,7 +287,7 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
         : undefined;
 
   return (
-    <div ref={mergedRef} className={className} style={containerStyle} role={role} {...domProps}>
+    <Component ref={mergedRef} className={className} style={containerStyle} role={role} {...domProps}>
       {visibleItems.map((item, index) => {
         const key = getItemKey
           ? getItemKey(item, index)
@@ -383,7 +333,6 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
 
       {isCurrentlyLoading && resolvedLoadingComponent && (
         <span
-          ref={loadingIndicatorRef}
           key="__tag_loading_indicator__"
           role={role ? "listitem" : undefined}
           style={{ display: "inline-flex", alignItems: "center", flexShrink: 0 }}
@@ -391,22 +340,23 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
           {resolvedLoadingComponent}
         </span>
       )}
-    </div>
+    </Component>
   );
 });
 
 /**
  * High-performance, zero-reflow React tag list with dynamic line-clamp (maxLines)
  * and customizable overflow indicator (+N more).
- * Supports forwardRef, full HTML attributes, and generic type inference.
+ * Supports forwardRef, full HTML attributes, polymorphic `as` prop, and generic type inference.
  */
-export const TagListOverflow = TagListOverflowInner as <T = any>(
-  props: TagListOverflowProps<T> & { ref?: React.Ref<HTMLDivElement> },
-) => React.ReactElement | null;
+export const TagListOverflow: TagListOverflowComponent = TagListOverflowInner as any;
+TagListOverflow.displayName = "TagListOverflow";
 
 /**
  * Convenient alias for TagListOverflow
  */
-export const TagOverflow = TagListOverflow;
+export const TagOverflow: TagListOverflowComponent = TagListOverflow;
+TagOverflow.displayName = "TagOverflow";
 
 export default TagListOverflow;
+

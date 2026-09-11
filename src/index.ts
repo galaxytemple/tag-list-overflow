@@ -34,6 +34,9 @@ export {
 // Types
 export type {
   TagListOverflowProps,
+  TagListOverflowBaseProps,
+  TagListOverflowComponent,
+  PolymorphicRef,
   UseTagOverflowOptions,
   UseTagOverflowResult,
   OverflowInfo,
