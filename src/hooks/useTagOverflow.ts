@@ -8,7 +8,7 @@ import { useContainerWidth } from "./useContainerWidth";
  * Headless React hook that calculates tag layout, handles container resizing,
  * and manages expansion state without rendering any markup.
  * Highly optimized: tag widths are measured once in memory, and container resizing
- * executes in <0.0001ms via pure integer math.
+ * executes sub-millisecond via pure integer math.
  */
 export function useTagOverflow<T = any>({
   items,
@@ -35,8 +35,10 @@ export function useTagOverflow<T = any>({
   containerWidth: manualContainerWidth,
   isLoading,
   loading,
+  loadingWidth,
 }: UseTagOverflowOptions<T>): UseTagOverflowResult<T> {
   const isCurrentlyLoading = Boolean(isLoading ?? loading);
+  const resolvedLoadingWidth = isCurrentlyLoading ? (loadingWidth ?? 24) : 0;
   const { ref: containerRef, width: measuredWidth, element } = useContainerWidth();
   const containerWidth = manualContainerWidth !== undefined ? manualContainerWidth : measuredWidth;
   const [internalExpanded, setInternalExpanded] = useState(false);
@@ -105,7 +107,7 @@ export function useTagOverflow<T = any>({
     return measureItemWidths(items, metrics, getItemLabel, getItemWidth, getItemExtraWidth);
   }, [items, metrics, getItemLabel, getItemWidth, getItemExtraWidth]);
 
-  // Lightning-fast packing on container resize (runs in ~0.0001ms)
+  // Lightning-fast packing on container resize
   const visibleCount = useMemo(() => {
     if (!items || totalItems === 0) return 0;
     if (isExpanded || maxLines <= 0) return totalItems;
@@ -121,6 +123,7 @@ export function useTagOverflow<T = any>({
       metrics,
       totalCount,
       overflowLabel,
+      loadingWidth: resolvedLoadingWidth,
     });
   }, [
     items,
@@ -133,6 +136,7 @@ export function useTagOverflow<T = any>({
     metrics,
     totalCount,
     overflowLabel,
+    resolvedLoadingWidth,
   ]);
 
   const actualVisibleCount = Math.min(totalItems, visibleCount);

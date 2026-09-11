@@ -93,6 +93,12 @@ export interface UseTagOverflowOptions<T = any> extends TagLayoutMetricsProps {
   isLoading?: boolean;
   /** Backward-compatible alias for isLoading */
   loading?: boolean;
+  /**
+   * Reserved width in pixels for loadingComponent on the final line.
+   * If omitted, automatically measured from the rendered loadingComponent element
+   * (with Canvas text estimation fallback) to prevent overflow clipping.
+   */
+  loadingWidth?: number;
 }
 
 /**

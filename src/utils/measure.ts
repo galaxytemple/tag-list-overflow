@@ -124,6 +124,21 @@ export function resolveMetrics(
   };
 }
 
+// Auto-clear cache when web fonts finish downloading
+if (typeof document !== "undefined" && "fonts" in document) {
+  document.fonts.ready.then(() => {
+    textWidthCache.clear();
+  }).catch(() => {});
+}
+
+/**
+ * Clears the memoized text width cache.
+ * Useful when custom web fonts finish loading or font metrics dynamically change.
+ */
+export function clearTextWidthCache(): void {
+  textWidthCache.clear();
+}
+
 /**
  * Measures the pixel width of a text string with Canvas 2D and memoization.
  * Uses an absolute 2px safety buffer to account for subpixel antialiasing differences.
@@ -188,7 +203,9 @@ export function measureBadgeWidth(
   const badgeWeight =
     typeof metrics.fontWeight === "number"
       ? Math.max(500, metrics.fontWeight)
-      : metrics.fontWeight || 500;
+      : typeof metrics.fontWeight === "string" && !isNaN(Number(metrics.fontWeight))
+        ? Math.max(500, Number(metrics.fontWeight))
+        : metrics.fontWeight || 500;
   const fontString = `${badgeWeight} ${metrics.fontSize}px ${metrics.fontFamily}`;
   const textWidth = measureTextWidth(ctx, label, fontString);
   return Math.ceil(

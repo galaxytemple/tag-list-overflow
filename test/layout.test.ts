@@ -195,5 +195,22 @@ describe("layout utilities", () => {
       const result = greedyPackWithReserved(widths, 200, 2, 10, 60);
       expect(result).toBe(1);
     });
+
+    it("reserves space for loadingWidth when loading is active", () => {
+      const tags = ["Alpha", "Beta", "Gamma", "Delta"];
+      const withoutLoading = computeVisibleTagCount({
+        items: tags,
+        containerWidth: 160,
+        maxLines: 1,
+      });
+      const withLoading = computeVisibleTagCount({
+        items: tags,
+        containerWidth: 160,
+        maxLines: 1,
+        loadingWidth: 40,
+      });
+      // Reserving 40px for loading spinner should leave less room for tags
+      expect(withLoading).toBeLessThanOrEqual(withoutLoading);
+    });
   });
 });

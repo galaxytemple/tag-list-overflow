@@ -197,6 +197,99 @@ describe("TagListOverflow component", () => {
       );
       expect(screen.getByTestId("fn-spinner").textContent).toBe("Function Spinner");
     });
+
+    it("automatically accounts for loadingComponent width and drops tags even without explicit loadingWidth", () => {
+      const items = ["React", "TypeScript", "Next.js", "Tailwind", "Shadcn", "Vite"];
+      const { unmount } = render(
+        <TagListOverflow
+          items={items}
+          containerWidth={320}
+          maxLines={1}
+          isLoading={false}
+        />,
+      );
+      const visibleWithoutLoading = screen
+        .getAllByRole("listitem")
+        .filter((el) => !el.textContent?.includes("more")).length;
+      unmount();
+
+      render(
+        <TagListOverflow
+          items={items}
+          containerWidth={320}
+          maxLines={1}
+          isLoading={true}
+          loadingComponent={
+            <span data-testid="auto-loader">
+              <span />
+              Loading...
+            </span>
+          }
+        />,
+      );
+
+      const visibleWithLoading = screen
+        .getAllByRole("listitem")
+        .filter(
+          (el) => !el.textContent?.includes("more") && !el.textContent?.includes("Loading"),
+        ).length;
+
+      // Because "Loading..." pill reserves ~88px, fewer tags should be visible compared to without loading
+      expect(visibleWithLoading).toBeLessThan(visibleWithoutLoading);
+      expect(screen.getByTestId("auto-loader")).toBeDefined();
+    });
+  });
+
+  describe("Bug fixes & Enhancements", () => {
+    it("applies fontSize and paddingX to DefaultTag and DefaultOverflow", () => {
+      render(
+        <TagListOverflow
+          items={["Tag1", "Tag2", "Tag3", "Tag4", "Tag5", "Tag6", "Tag7", "Tag8"]}
+          containerWidth={300}
+          maxLines={1}
+          fontSize={11}
+          paddingX={5}
+        />,
+      );
+
+      const tag1 = screen.getByText("Tag1");
+      expect(tag1.style.fontSize).toBe("11px");
+      expect(tag1.style.padding).toBe("4px 5px");
+
+      const badge = screen.getByText(/\+\d+ more/);
+      expect(badge.style.fontSize).toBe("11px");
+      expect(badge.style.padding).toBe("4px 5px");
+    });
+
+    it("assigns role='listitem' to DefaultOverflow and loadingComponent when container has role='list'", () => {
+      render(
+        <TagListOverflow
+          items={["Tag1", "Tag2", "Tag3"]}
+          containerWidth={100}
+          maxLines={1}
+          isLoading={true}
+          loadingComponent={<span>Spinner</span>}
+        />,
+      );
+
+      const badge = screen.getByText(/\+\d+ more/);
+      expect(badge.getAttribute("role")).toBe("listitem");
+
+      const spinner = screen.getByText("Spinner");
+      expect(spinner.parentElement?.getAttribute("role")).toBe("listitem");
+    });
+
+    it("handles non-function children gracefully without throwing TypeError", () => {
+      expect(() => {
+        render(
+          <TagListOverflow
+            items={["SafeTag"]}
+            {...({ children: <div>Static Element</div> } as any)}
+          />,
+        );
+      }).not.toThrow();
+      expect(screen.getByText("SafeTag")).toBeDefined();
+    });
   });
 });
 

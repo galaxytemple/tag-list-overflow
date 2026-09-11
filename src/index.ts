@@ -27,6 +27,7 @@ export {
   measureBadgeWidth,
   measureTextWidth,
   resolveMetrics,
+  clearTextWidthCache,
   TAG_SIZE_PRESETS,
 } from "./utils/measure";
 

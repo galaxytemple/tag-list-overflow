@@ -4,6 +4,9 @@ export interface DefaultTagProps {
   label: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
+  fontSize?: number;
+  paddingX?: number;
+  border?: number;
 }
 
 const baseTagStyle: React.CSSProperties = {
@@ -17,6 +20,8 @@ const baseTagStyle: React.CSSProperties = {
   userSelect: "none",
   boxSizing: "border-box",
   fontFamily: "inherit",
+  minWidth: 0,
+  flexShrink: 1,
 };
 
 const defaultColorsStyle: React.CSSProperties = {
@@ -28,13 +33,26 @@ const defaultColorsStyle: React.CSSProperties = {
 /**
  * Clean, lightweight, unopinionated default tag component with accessibility role.
  */
-export const DefaultTag: React.FC<DefaultTagProps> = ({ label, className, style }) => {
+export const DefaultTag: React.FC<DefaultTagProps> = ({
+  label,
+  className,
+  style,
+  fontSize,
+  paddingX,
+  border,
+}) => {
+  const dynamicStyle: React.CSSProperties = {};
+  if (fontSize !== undefined) dynamicStyle.fontSize = `${fontSize}px`;
+  if (paddingX !== undefined) dynamicStyle.padding = `4px ${paddingX}px`;
+  if (border !== undefined) dynamicStyle.borderWidth = `${border}px`;
+
   return (
     <span
       role="listitem"
       className={className}
       style={{
         ...baseTagStyle,
+        ...dynamicStyle,
         ...(className ? {} : defaultColorsStyle),
         ...style,
       }}

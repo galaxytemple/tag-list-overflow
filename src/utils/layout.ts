@@ -29,7 +29,10 @@ export function formatOverflowText(
 ): string {
   if (typeof labelOrFormatter === "function") {
     const result = labelOrFormatter(count);
-    return typeof result === "string" ? result : `+${count}`;
+    if (typeof result === "string") return result;
+    if (typeof result === "number") return String(result);
+    // If a non-string/JSX element was returned, reserve realistic space with suffix
+    return `+${count.toLocaleString()} more`;
   }
   const suffix = labelOrFormatter !== undefined ? labelOrFormatter : "more";
   return suffix ? `+${count.toLocaleString()} ${suffix}` : `+${count.toLocaleString()}`;
@@ -48,6 +51,7 @@ export interface ComputeVisibleTagCountOptions<T = any> {
   totalCount?: number;
   overflowLabel?: string | ((count: number) => any);
   containerElement?: HTMLElement | null;
+  loadingWidth?: number;
 }
 
 /**
@@ -76,7 +80,7 @@ export function measureItemWidths<T = any>(
 
 /**
  * Pure mathematical layout packing using pre-computed tag widths.
- * Runs in ~0.0001ms with zero Canvas calls or DOM reads.
+ * Runs in sub-millisecond execution with zero Canvas calls or DOM reads.
  */
 export function packTagLayout({
   tagWidths,
@@ -87,6 +91,7 @@ export function packTagLayout({
   metrics,
   totalCount,
   overflowLabel,
+  loadingWidth = 0,
 }: {
   tagWidths: ArrayLike<number>;
   totalItems: number;
@@ -96,6 +101,7 @@ export function packTagLayout({
   metrics: Required<TagMetricsConfig>;
   totalCount?: number;
   overflowLabel?: string | ((count: number) => any);
+  loadingWidth?: number;
 }): number {
   if (totalItems === 0 || containerWidth <= 0) return 0;
   if (maxLines <= 0) return totalItems;
@@ -104,23 +110,41 @@ export function packTagLayout({
   const fitCount = greedyPack(tagWidths, containerWidth, maxLines, gapX);
 
   const total = totalCount ?? totalItems;
-  // If all local items fit and there are no remote unloaded items, no overflow badge is needed
+  let fitWithLoading = fitCount;
+  if (loadingWidth > 0) {
+    fitWithLoading = greedyPackWithReserved(
+      tagWidths,
+      containerWidth,
+      maxLines,
+      gapX,
+      loadingWidth,
+    );
+  }
+
+  // If all local items fit and there are no remote unloaded items
   if (fitCount >= totalItems && total === totalItems) {
-    return totalItems;
+    if (loadingWidth > 0) {
+      if (fitWithLoading >= totalItems) return totalItems;
+    } else {
+      return totalItems;
+    }
   }
 
   // Pass 2: Calculate overflow badge width and reserve space on the last row
   const ctx = getCanvasContext();
-  const remainingFromFit = total - fitCount;
+  const baseFit = fitCount >= totalItems ? fitWithLoading : fitCount;
+  const remainingFromFit = Math.max(1, total - baseFit);
   const moreText = formatOverflowText(remainingFromFit, overflowLabel);
   const moreTagWidth = measureBadgeWidth(ctx, moreText, metrics);
+  // Add 2px subpixel safety buffer so real DOM font-rendering variations never push the badge to an extra row
+  const totalReservedWidth = moreTagWidth + 2 + (loadingWidth > 0 ? gapX + loadingWidth : 0);
 
   const adjustedCount = greedyPackWithReserved(
     tagWidths,
     containerWidth,
     maxLines,
     gapX,
-    moreTagWidth,
+    totalReservedWidth,
   );
 
   // Pass 3: If adjusting visible count changed the remaining count digits
@@ -128,6 +152,7 @@ export function packTagLayout({
     const newRemaining = total - adjustedCount;
     const newMoreText = formatOverflowText(newRemaining, overflowLabel);
     const newMoreWidth = measureBadgeWidth(ctx, newMoreText, metrics);
+    const newTotalReserved = newMoreWidth + 2 + (loadingWidth > 0 ? gapX + loadingWidth : 0);
 
     if (newMoreWidth > moreTagWidth) {
       const finalCount = greedyPackWithReserved(
@@ -135,7 +160,7 @@ export function packTagLayout({
         containerWidth,
         maxLines,
         gapX,
-        newMoreWidth,
+        newTotalReserved,
       );
       return Math.max(0, finalCount);
     }
@@ -160,6 +185,7 @@ export function computeVisibleTagCount<T = any>({
   totalCount,
   overflowLabel,
   containerElement,
+  loadingWidth,
 }: ComputeVisibleTagCountOptions<T>): number {
   if (!items || items.length === 0 || containerWidth <= 0) return 0;
   if (maxLines <= 0) return items.length;
@@ -176,6 +202,7 @@ export function computeVisibleTagCount<T = any>({
     metrics,
     totalCount,
     overflowLabel,
+    loadingWidth,
   });
 }
 

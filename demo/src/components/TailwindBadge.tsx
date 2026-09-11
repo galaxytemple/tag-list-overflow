@@ -23,7 +23,7 @@ export function TailwindBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-x-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset select-none",
+        "inline-flex items-center gap-x-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset select-none shrink min-w-0",
         colorMap[color],
         className
       )}

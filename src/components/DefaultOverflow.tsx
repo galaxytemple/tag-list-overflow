@@ -8,6 +8,10 @@ export interface DefaultOverflowProps {
   clickable?: boolean;
   className?: string;
   style?: React.CSSProperties;
+  fontSize?: number;
+  overflowPaddingX?: number;
+  border?: number;
+  role?: string;
 }
 
 const defaultOverflowStyle: React.CSSProperties = {
@@ -27,6 +31,7 @@ const defaultOverflowStyle: React.CSSProperties = {
   fontFamily: "inherit",
   appearance: "none",
   cursor: "default",
+  flexShrink: 0,
 };
 
 const clickableStyle: React.CSSProperties = {
@@ -35,7 +40,7 @@ const clickableStyle: React.CSSProperties = {
 };
 
 /**
- * Default "+N more" / "Show less" badge component.
+ * Default "+N more" / "Show less" badge component with accessibility support.
  */
 export const DefaultOverflow: React.FC<DefaultOverflowProps> = ({
   info,
@@ -44,6 +49,10 @@ export const DefaultOverflow: React.FC<DefaultOverflowProps> = ({
   clickable,
   className,
   style,
+  fontSize,
+  overflowPaddingX,
+  border,
+  role,
 }) => {
   const { count, isExpanded, toggle } = info;
 
@@ -66,15 +75,24 @@ export const DefaultOverflow: React.FC<DefaultOverflowProps> = ({
     }
   }
 
+  const dynamicStyle: React.CSSProperties = {};
+  if (fontSize !== undefined) dynamicStyle.fontSize = `${fontSize}px`;
+  if (overflowPaddingX !== undefined) dynamicStyle.padding = `4px ${overflowPaddingX}px`;
+  if (border !== undefined) dynamicStyle.borderWidth = `${border}px`;
+
   const combinedStyle = {
     ...(clickable ? clickableStyle : defaultOverflowStyle),
+    ...dynamicStyle,
     ...style,
   };
+
+  const resolvedRole = role !== undefined ? (role || undefined) : "listitem";
 
   if (clickable) {
     return (
       <button
         type="button"
+        role={resolvedRole}
         onClick={toggle}
         aria-expanded={isExpanded}
         className={className}
@@ -86,7 +104,7 @@ export const DefaultOverflow: React.FC<DefaultOverflowProps> = ({
   }
 
   return (
-    <span className={className} style={combinedStyle}>
+    <span role={resolvedRole} className={className} style={combinedStyle}>
       {content}
     </span>
   );

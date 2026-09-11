@@ -27,14 +27,26 @@ export function useContainerWidth(): UseContainerWidthResult {
     elementRef.current = node;
 
     if (!node) {
-      setWidth(0);
       return;
     }
 
-    // Set initial width immediately if available
-    const initialWidth = Math.floor(node.getBoundingClientRect().width);
+    // Set initial content-box width immediately to match entry.contentRect.width
+    let initialWidth = 0;
+    if (typeof window !== "undefined") {
+      try {
+        const cs = window.getComputedStyle(node);
+        const paddingX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+        const borderX = (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0);
+        initialWidth = Math.max(0, Math.floor(node.getBoundingClientRect().width - paddingX - borderX));
+      } catch {
+        initialWidth = Math.floor(node.getBoundingClientRect().width);
+      }
+    } else {
+      initialWidth = Math.floor(node.getBoundingClientRect().width);
+    }
+
     if (initialWidth > 0) {
-      setWidth(initialWidth);
+      setWidth((prev) => (prev === initialWidth ? prev : initialWidth));
     }
 
     if (typeof ResizeObserver !== "undefined") {

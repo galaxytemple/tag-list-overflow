@@ -4,6 +4,7 @@ import {
   measureTagWidth,
   measureTextWidth,
   resolveMetrics,
+  clearTextWidthCache,
   TAG_SIZE_PRESETS,
 } from "../src/utils/measure";
 
@@ -48,5 +49,10 @@ describe("measurement utilities", () => {
   it("quotes font families with spaces properly for Canvas 2D syntax", () => {
     const custom = resolveMetrics({ fontFamily: "Open Sans, sans-serif" });
     expect(custom.fontFamily).toContain('"Open Sans"');
+  });
+
+  it("clears text width cache without errors", () => {
+    measureTextWidth(null, "CachedText", "400 14px sans-serif");
+    expect(() => clearTextWidthCache()).not.toThrow();
   });
 });

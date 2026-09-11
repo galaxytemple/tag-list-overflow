@@ -295,7 +295,7 @@ export default function App() {
             >
               <TagListOverflow
                 items={tags}
-                containerWidth={isFullWidth ? undefined : containerWidth - 40}
+                containerWidth={isFullWidth ? undefined : containerWidth - 44}
                 maxLines={maxLines}
                 gapX={gapX}
                 gapY={gapY}
@@ -346,7 +346,7 @@ export default function App() {
                         <button
                           type="button"
                           onClick={toggle}
-                          className="inline-flex items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 px-2.5 py-0.5 text-xs font-semibold transition-colors cursor-pointer select-none"
+                          className="inline-flex items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 px-2.5 py-0.5 text-xs font-semibold transition-colors cursor-pointer select-none shrink-0"
                         >
                           {isExpanded ? "Collapse ↑" : `+${count} more`}
                         </button>
@@ -356,7 +356,7 @@ export default function App() {
                         <button
                           type="button"
                           onClick={toggle}
-                          className="inline-flex items-center justify-center rounded-full text-xs font-medium px-2.5 py-1 bg-slate-800 border border-slate-700 text-blue-400 hover:bg-slate-700 transition-all cursor-pointer select-none"
+                          className="inline-flex items-center justify-center rounded-full text-xs font-medium px-2.5 py-1 bg-slate-800 border border-slate-700 text-blue-400 hover:bg-slate-700 transition-colors cursor-pointer select-none shrink-0"
                         >
                           {isExpanded ? "Show less ↑" : `+${count} more`}
                         </button>
@@ -366,7 +366,7 @@ export default function App() {
                         <button
                           type="button"
                           onClick={toggle}
-                          className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 cursor-pointer select-none"
+                          className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ring-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 cursor-pointer select-none shrink-0"
                         >
                           {isExpanded ? "Collapse" : `+${count} more`}
                         </button>

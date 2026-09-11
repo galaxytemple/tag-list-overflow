@@ -1,11 +1,37 @@
 "use client";
 
-import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  forwardRef,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTagOverflow } from "../hooks/useTagOverflow";
 import type { OverflowInfo, TagListOverflowProps } from "../types";
 import { resolveItemLabel } from "../utils/layout";
+import { getCanvasContext } from "../utils/measure";
 import { DefaultOverflow } from "./DefaultOverflow";
 import { DefaultTag } from "./DefaultTag";
+
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+/**
+ * Recursively extracts plain text content from React children or JSX nodes
+ * to estimate rendered text width before DOM layout or in SSR/testing.
+ */
+function extractTextContent(node: React.ReactNode): string {
+  if (typeof node === "string") return node;
+  if (typeof node === "number") return String(node);
+  if (!node) return "";
+  if (Array.isArray(node)) return node.map(extractTextContent).join(" ");
+  if (React.isValidElement(node) && node.props && (node.props as any).children) {
+    return extractTextContent((node.props as any).children);
+  }
+  return "";
+}
 
 /**
  * Utility to merge multiple React refs safely.
@@ -70,6 +96,7 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
     loading = false,
     renderSkeleton,
     role = "list",
+    loadingWidth,
     ...domProps
   } = props;
 
@@ -84,7 +111,72 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
   const resolvedGapY = gapY ?? gap ?? 4;
 
   const innerRef = useRef<HTMLDivElement | null>(null);
+  const loadingIndicatorRef = useRef<HTMLSpanElement | null>(null);
   const [measuredTagHeight, setMeasuredTagHeight] = useState<number>(0);
+  const [measuredLoadingWidth, setMeasuredLoadingWidth] = useState<number>(0);
+
+  // Auto-measure rendered loadingComponent width
+  useIsomorphicLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!isCurrentlyLoading || !resolvedLoadingComponent) {
+      if (measuredLoadingWidth !== 0) setMeasuredLoadingWidth(0);
+      return;
+    }
+    const el = loadingIndicatorRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      const w = Math.ceil(el.getBoundingClientRect().width);
+      if (w > 0 && w !== measuredLoadingWidth) {
+        setMeasuredLoadingWidth(w);
+      }
+    };
+
+    measure();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(() => {
+        measure();
+      });
+      ro.observe(el);
+      return () => ro.disconnect();
+    }
+  }, [isCurrentlyLoading, resolvedLoadingComponent, measuredLoadingWidth]);
+
+  // Initial estimate before DOM measurement, or fallback in test / SSR environments
+  const estimatedLoadingWidth = useMemo(() => {
+    if (!isCurrentlyLoading || !resolvedLoadingComponent) return 0;
+    if (loadingWidth !== undefined) return loadingWidth;
+    if (measuredLoadingWidth > 0) return measuredLoadingWidth;
+
+    const text = extractTextContent(resolvedLoadingComponent).trim();
+    if (text) {
+      const ctx = getCanvasContext();
+      if (ctx) {
+        ctx.font = `${fontWeight ?? 500} ${fontSize ?? 12}px ${fontFamily ?? 'system-ui, sans-serif'}`;
+        const textW = ctx.measureText(text).width;
+        // Text width + pill horizontal padding (~20px) + indicator dot & gap (~16px) + border (2px)
+        return Math.ceil(textW + 38);
+      }
+      return Math.ceil(text.length * 8 + 38);
+    }
+    return 24;
+  }, [
+    isCurrentlyLoading,
+    resolvedLoadingComponent,
+    loadingWidth,
+    measuredLoadingWidth,
+    fontSize,
+    fontWeight,
+    fontFamily,
+  ]);
+
+  const effectiveLoadingWidth =
+    loadingWidth !== undefined
+      ? loadingWidth
+      : measuredLoadingWidth > 0
+        ? measuredLoadingWidth
+        : estimatedLoadingWidth;
 
   const {
     containerRef,
@@ -119,6 +211,7 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
     expanded,
     onExpandedChange,
     isLoading: isCurrentlyLoading,
+    loadingWidth: effectiveLoadingWidth,
   });
 
   const mergedRef = useMergeRefs<HTMLDivElement>(containerRef, innerRef, ref);
@@ -236,21 +329,37 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
     ...style,
   };
 
-  const tagRenderer = children || renderTag;
+  const tagRenderer =
+    typeof children === "function"
+      ? children
+      : typeof renderTag === "function"
+        ? renderTag
+        : undefined;
 
   return (
     <div ref={mergedRef} className={className} style={containerStyle} role={role} {...domProps}>
       {visibleItems.map((item, index) => {
         const key = getItemKey
           ? getItemKey(item, index)
-          : (item as any)?.id ?? (item as any)?.key ?? index;
+          : (item as any)?.id ??
+            (item as any)?.key ??
+            (typeof item === "string" || typeof item === "number" ? item : index);
 
         if (tagRenderer) {
           return <React.Fragment key={key}>{tagRenderer(item, index)}</React.Fragment>;
         }
 
         const label = resolveItemLabel(item, getItemLabel);
-        return <DefaultTag key={key} label={label} className={tagClassName} />;
+        return (
+          <DefaultTag
+            key={key}
+            label={label}
+            className={tagClassName}
+            fontSize={fontSize}
+            paddingX={paddingX}
+            border={border}
+          />
+        );
       })}
 
       {(isOverflowed || (isExpanded && expandable)) && (
@@ -263,15 +372,24 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner<T>(
               overflowLabel={overflowLabel}
               collapseLabel={collapseLabel}
               clickable={expandable}
+              fontSize={fontSize}
+              overflowPaddingX={overflowPaddingX ?? paddingX}
+              border={border}
+              role={role ? "listitem" : undefined}
             />
           )}
         </React.Fragment>
       )}
 
       {isCurrentlyLoading && resolvedLoadingComponent && (
-        <React.Fragment key="__tag_loading_indicator__">
+        <span
+          ref={loadingIndicatorRef}
+          key="__tag_loading_indicator__"
+          role={role ? "listitem" : undefined}
+          style={{ display: "inline-flex", alignItems: "center", flexShrink: 0 }}
+        >
           {resolvedLoadingComponent}
-        </React.Fragment>
+        </span>
       )}
     </div>
   );
