@@ -50,6 +50,12 @@
     "zero-reflow",
     "canvas-measurement",
     "pretext",
+    "shadcn",
+    "shadcn-ui",
+    "heroui",
+    "tailwind",
+    "tailwindcss",
+    "nextjs",
     "truncation",
     "headless",
     "ui-component"
