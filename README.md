@@ -2,6 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/tag-list-overflow?color=blue)](https://www.npmjs.com/package/tag-list-overflow)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/tag-list-overflow?color=success)](https://bundlephobia.com/package/tag-list-overflow)
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/galaxytemple/tag-list-overflow)
 [![license](https://img.shields.io/npm/l/tag-list-overflow)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 
@@ -9,6 +10,12 @@
 
 <p align="center">
   <img src="./.github/assets/demo.gif" alt="tag-list-overflow zero-reflow responsive demo" width="760" />
+</p>
+
+<p align="center">
+  <a href="https://stackblitz.com/github/galaxytemple/tag-list-overflow" target="_blank" rel="noopener noreferrer">
+    <img src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" alt="Open in StackBlitz" />
+  </a>
 </p>
 
 ---
