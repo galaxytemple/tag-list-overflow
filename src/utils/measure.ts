@@ -93,6 +93,41 @@ export function resolveMetrics(
       ? TAG_SIZE_PRESETS[tagSize] ?? TAG_SIZE_PRESETS.md
       : tagSize ?? TAG_SIZE_PRESETS.md;
 
+  let autoFontSize: number | undefined;
+  let autoFontFamily: string | undefined;
+  let autoFontWeight: number | string | undefined;
+  let autoPaddingX: number | undefined;
+  let autoBorder: number | undefined;
+
+  if (typeof window !== "undefined" && container) {
+    const sampleEl = (container.firstElementChild as HTMLElement) || container;
+    try {
+      const computed = window.getComputedStyle(sampleEl);
+      if (computed) {
+        if (computed.fontSize) {
+          const parsed = parseFloat(computed.fontSize);
+          if (parsed > 0) autoFontSize = parsed;
+        }
+        if (computed.fontFamily) {
+          autoFontFamily = quoteFontFamilyIfNeeded(computed.fontFamily);
+        }
+        if (computed.fontWeight) {
+          autoFontWeight = computed.fontWeight;
+        }
+        if (computed.paddingLeft) {
+          const parsed = parseFloat(computed.paddingLeft);
+          if (!isNaN(parsed)) autoPaddingX = parsed;
+        }
+        if (computed.borderLeftWidth) {
+          const parsed = parseFloat(computed.borderLeftWidth);
+          if (!isNaN(parsed)) autoBorder = parsed;
+        }
+      }
+    } catch {
+      // fallback to presets
+    }
+  }
+
   const rawOverrideFont = overrides?.fontFamily;
   const validOverrideFont =
     rawOverrideFont &&
@@ -102,12 +137,12 @@ export function resolveMetrics(
     rawOverrideFont !== "revert"
       ? rawOverrideFont
       : undefined;
-  const rawFontFamily = validOverrideFont || base.fontFamily || getDefaultFontFamily(container);
+  const rawFontFamily = validOverrideFont || autoFontFamily || base.fontFamily || getDefaultFontFamily(container);
   const fontFamily = quoteFontFamilyIfNeeded(rawFontFamily);
-  const fontSize = overrides?.fontSize ?? base.fontSize ?? 14;
-  const fontWeight = overrides?.fontWeight ?? base.fontWeight ?? 400;
-  const paddingX = overrides?.paddingX ?? base.paddingX ?? 8;
-  const border = overrides?.border ?? base.border ?? 1;
+  const fontSize = overrides?.fontSize ?? autoFontSize ?? base.fontSize ?? 14;
+  const fontWeight = overrides?.fontWeight ?? autoFontWeight ?? base.fontWeight ?? 400;
+  const paddingX = overrides?.paddingX ?? autoPaddingX ?? base.paddingX ?? 8;
+  const border = overrides?.border ?? autoBorder ?? base.border ?? 1;
   const extraWidth = overrides?.extraWidth ?? base.extraWidth ?? 0;
   const overflowPaddingX = overrides?.overflowPaddingX ?? base.overflowPaddingX ?? paddingX;
   const overflowExtraWidth = overrides?.overflowExtraWidth ?? base.overflowExtraWidth ?? 0;
@@ -141,7 +176,7 @@ export function clearTextWidthCache(): void {
 
 /**
  * Measures the pixel width of a text string with Canvas 2D and memoization.
- * Uses an absolute 2px safety buffer to account for subpixel antialiasing differences.
+ * Preserves subpixel floating point precision to match browser subpixel layout engines.
  */
 export function measureTextWidth(
   ctx: CanvasRenderingContext2D | null,
@@ -157,13 +192,12 @@ export function measureTextWidth(
   let width: number;
   if (ctx) {
     ctx.font = fontString;
-    // Absolute 2px buffer covers subpixel anti-aliasing variations without over-inflating long text
-    width = Math.ceil(ctx.measureText(text).width) + 2;
+    width = ctx.measureText(text).width;
   } else {
     // Fallback heuristic if canvas is not available (e.g. basic Node.js test environment)
-    const fontSizeMatch = fontString.match(/(\d+)px/);
-    const fontSize = fontSizeMatch ? parseInt(fontSizeMatch[1], 10) : 14;
-    width = Math.ceil(text.length * fontSize * 0.6) + 2;
+    const fontSizeMatch = fontString.match(/(\d+(?:\.\d+)?)px/);
+    const fontSize = fontSizeMatch ? parseFloat(fontSizeMatch[1]) : 14;
+    width = text.length * fontSize * 0.6;
   }
 
   // Cap cache size to avoid unbounded memory growth
@@ -177,6 +211,7 @@ export function measureTextWidth(
 
 /**
  * Measures the total rendered width of a tag (text + horizontal padding + borders + extraWidth).
+ * Preserves subpixel precision to avoid cumulative ceiling error across multi-tag rows.
  */
 export function measureTagWidth(
   ctx: CanvasRenderingContext2D | null,
@@ -186,9 +221,7 @@ export function measureTagWidth(
 ): number {
   const fontString = `${metrics.fontWeight} ${metrics.fontSize}px ${metrics.fontFamily}`;
   const textWidth = measureTextWidth(ctx, label, fontString);
-  return Math.ceil(
-    metrics.border * 2 + metrics.paddingX * 2 + metrics.extraWidth + additionalExtraWidth + textWidth,
-  );
+  return metrics.border * 2 + metrics.paddingX * 2 + metrics.extraWidth + additionalExtraWidth + textWidth;
 }
 
 /**
@@ -208,7 +241,5 @@ export function measureBadgeWidth(
         : metrics.fontWeight || 500;
   const fontString = `${badgeWeight} ${metrics.fontSize}px ${metrics.fontFamily}`;
   const textWidth = measureTextWidth(ctx, label, fontString);
-  return Math.ceil(
-    metrics.border * 2 + metrics.overflowPaddingX * 2 + metrics.overflowExtraWidth + textWidth,
-  );
+  return metrics.border * 2 + metrics.overflowPaddingX * 2 + metrics.overflowExtraWidth + textWidth;
 }

@@ -7,67 +7,62 @@ export interface UseContainerWidthResult {
 }
 
 /**
- * Hook that tracks the width of a container element via ResizeObserver.
- * Leverages React 18 automatic batching to match the browser refresh rate (60fps/120fps)
- * without triggering redundant renders or layout thrashing.
+ * Hook that tracks the content-box width of a container element via ResizeObserver.
+ * StrictMode-safe, clean React 18 ref callback, with zero redundant window listeners.
  */
 export function useContainerWidth(): UseContainerWidthResult {
-  const observerRef = useRef<ResizeObserver | null>(null);
-  const elementRef = useRef<HTMLElement | null>(null);
+  const [element, setElement] = useState<HTMLElement | null>(null);
   const [width, setWidth] = useState(0);
+  const observerRef = useRef<ResizeObserver | null>(null);
 
-  useEffect(() => {
-    return () => {
-      observerRef.current?.disconnect();
-    };
+  // Stable callback ref that synchronizes the mounted DOM element
+  const ref = useCallback((node: HTMLElement | null) => {
+    setElement((prev) => (prev === node ? prev : node));
   }, []);
 
-  const callbackRef = useCallback((node: HTMLElement | null) => {
-    observerRef.current?.disconnect();
-    elementRef.current = node;
-
-    if (!node) {
+  useEffect(() => {
+    if (!element) {
+      setWidth(0);
       return;
     }
 
-    // Set initial content-box width immediately to match entry.contentRect.width
-    let initialWidth = 0;
-    if (typeof window !== "undefined") {
-      try {
-        const cs = window.getComputedStyle(node);
-        const paddingX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
-        const borderX = (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0);
-        initialWidth = Math.max(0, Math.floor(node.getBoundingClientRect().width - paddingX - borderX));
-      } catch {
-        initialWidth = Math.floor(node.getBoundingClientRect().width);
+    // Measure initial content-box width synchronously on mount
+    try {
+      const cs = window.getComputedStyle(element);
+      const paddingX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      const borderX = (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0);
+      const initial = Math.max(0, Math.floor(element.getBoundingClientRect().width - paddingX - borderX));
+      if (initial > 0) {
+        setWidth((prev) => (prev === initial ? prev : initial));
       }
-    } else {
-      initialWidth = Math.floor(node.getBoundingClientRect().width);
+    } catch {
+      // Safe fallback for detached or test environments
     }
 
-    if (initialWidth > 0) {
-      setWidth((prev) => (prev === initialWidth ? prev : initialWidth));
-    }
+    if (typeof ResizeObserver === "undefined") return;
 
-    if (typeof ResizeObserver !== "undefined") {
-      const observer = new ResizeObserver((entries) => {
-        const entry = entries[0];
-        if (entry) {
-          const newWidth = Math.floor(entry.contentRect.width);
-          if (newWidth > 0) {
-            setWidth((prev) => (prev === newWidth ? prev : newWidth));
-          }
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        const newWidth = Math.floor(entry.contentRect.width);
+        if (newWidth > 0) {
+          setWidth((prev) => (prev === newWidth ? prev : newWidth));
         }
-      });
+      }
+    });
 
-      observer.observe(node);
-      observerRef.current = observer;
-    }
-  }, []);
+    observer.observe(element);
+    observerRef.current = observer;
+
+    return () => {
+      observer.disconnect();
+      observerRef.current = null;
+    };
+  }, [element]);
 
   return {
-    ref: callbackRef,
+    ref,
     width,
-    element: elementRef.current,
+    element,
   };
 }

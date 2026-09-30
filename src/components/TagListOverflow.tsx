@@ -8,6 +8,7 @@ import { useTagOverflow } from "../hooks/useTagOverflow";
 import type {
   OverflowInfo,
   TagListOverflowComponent,
+  TagListOverflowProps,
 } from "../types";
 import { resolveItemLabel } from "../utils/layout";
 import { getCanvasContext } from "../utils/measure";
@@ -23,8 +24,8 @@ function extractTextContent(node: React.ReactNode): string {
   if (typeof node === "number") return String(node);
   if (!node) return "";
   if (Array.isArray(node)) return node.map(extractTextContent).join(" ");
-  if (React.isValidElement(node) && node.props && (node.props as any).children) {
-    return extractTextContent((node.props as any).children);
+  if (React.isValidElement(node) && node.props && typeof node.props === "object" && "children" in node.props) {
+    return extractTextContent((node.props as { children?: React.ReactNode }).children);
   }
   return "";
 }
@@ -39,7 +40,7 @@ function useMergeRefs<T>(...refs: (React.Ref<T> | undefined)[]) {
       refs.forEach((ref) => {
         if (typeof ref === "function") {
           ref(value);
-        } else if (ref != null) {
+        } else if (ref != null && "current" in ref) {
           (ref as React.MutableRefObject<T | null>).current = value;
         }
       });
@@ -51,10 +52,13 @@ function useMergeRefs<T>(...refs: (React.Ref<T> | undefined)[]) {
  * Internal implementation of TagListOverflow with ref forwarding and polymorphic rendering.
  * 100% off-DOM layout calculation: zero DOM-read reflows, zero child ResizeObservers.
  */
-const TagListOverflowInner = forwardRef(function TagListOverflowInner(
-  props: any,
-  ref: any,
-) {
+function TagListOverflowInner<
+  T = any,
+  C extends React.ElementType = "div",
+>(
+  props: TagListOverflowProps<T, C>,
+  ref: React.Ref<any>,
+): React.ReactElement | null {
   const {
     as: Component = "div" as any,
     items,
@@ -291,9 +295,13 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner(
       {visibleItems.map((item, index) => {
         const key = getItemKey
           ? getItemKey(item, index)
-          : (item as any)?.id ??
-            (item as any)?.key ??
-            (typeof item === "string" || typeof item === "number" ? item : index);
+          : typeof item === "object" && item !== null && "id" in item
+            ? (item as { id: React.Key }).id
+            : typeof item === "object" && item !== null && "key" in item
+              ? (item as { key: React.Key }).key
+              : typeof item === "string" || typeof item === "number"
+                ? item
+                : index;
 
         if (tagRenderer) {
           return <React.Fragment key={key}>{tagRenderer(item, index)}</React.Fragment>;
@@ -342,14 +350,16 @@ const TagListOverflowInner = forwardRef(function TagListOverflowInner(
       )}
     </Component>
   );
-});
+}
 
 /**
  * High-performance, zero-reflow React tag list with dynamic line-clamp (maxLines)
  * and customizable overflow indicator (+N more).
  * Supports forwardRef, full HTML attributes, polymorphic `as` prop, and generic type inference.
  */
-export const TagListOverflow: TagListOverflowComponent = TagListOverflowInner as any;
+export const TagListOverflow: TagListOverflowComponent = forwardRef(
+  TagListOverflowInner as any,
+) as unknown as TagListOverflowComponent;
 TagListOverflow.displayName = "TagListOverflow";
 
 /**
